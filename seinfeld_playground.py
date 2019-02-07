@@ -5,7 +5,9 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 from sklearn.preprocessing import Binarizer
 from sklearn.feature_extraction.text import CountVectorizer
-from nltk import trigrams
+from nltk import ngrams
+from collections import Counter
+
 
 def load_corpus():
     seinfeld = corpus.load(fold_laughs=True)
@@ -66,12 +68,19 @@ def getOneHotEncoding(text_array):
     corpus_one_hot = onehot.fit_transform(corpus_freq.toarray())
     return freq, corpus_one_hot
 
+def getTrigramEncoding(text_array):
+    freq = CountVectorizer(ngram_range=(3, 3), analyzer='char_wb') # trigram
+    corpus_trigrams = freq.fit_transform(text_array)
+
+    onehot = Binarizer()
+    corpus_trigrams_one_hot = onehot.fit_transform(corpus_trigrams.toarray())
+
+    return freq, corpus_trigrams_one_hot
+
 df = load_corpus()
 df_main = df[df['character'].isin(["JERRY", "ELAINE", "KRAMER", "GEORGE"])]
 freq, corpus_one_hot = getOneHotEncoding(df.txt)
-
-
-print(df_main.head())
+freq_trigrams, corpus_trigrams_one_hot = getTrigramEncoding(df.txt)
 
 
 
