@@ -5,9 +5,6 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 from sklearn.preprocessing import Binarizer
 from sklearn.feature_extraction.text import CountVectorizer
-from nltk import ngrams
-from collections import Counter
-
 
 def load_corpus():
     seinfeld = corpus.load(fold_laughs=True)
@@ -42,23 +39,24 @@ def load_corpus():
     return df
 
 
-def plotStuff():
+def plotStuff(df_to_plot):
     # sentence time length by character and by funniness
-    g = sns.FacetGrid(df_main, col='character', row='is_funny')
+    g = sns.FacetGrid(df_to_plot, col='character', row='is_funny')
     g.map(sns.distplot, "length", bins=50, color='b')
 
     # sentence length by character and by funniness
-    g2 = sns.FacetGrid(df_main, col='character', row='is_funny')
+    g2 = sns.FacetGrid(df_to_plot, col='character', row='is_funny')
     g2.map(sns.distplot, "num_words", bins=50, color='b')
 
     # sentence time length vs laugh_time dist by character
-    g3 = sns.FacetGrid(df_main, col='character')
+    g3 = sns.FacetGrid(df_to_plot, col='character')
     g3.map(sns.kdeplot, "length", "laugh_time", shaded=True)
 
     # sentence length vs laugh_time dist by character
-    g3 = sns.FacetGrid(df_main, col='character')
+    g3 = sns.FacetGrid(df_to_plot, col='character')
     g3.map(sns.kdeplot, "num_words", "laugh_time", shaded=True)
     plt.show()
+
 
 def getOneHotEncoding(text_array):
     freq = CountVectorizer()
@@ -67,6 +65,7 @@ def getOneHotEncoding(text_array):
     onehot = Binarizer()
     corpus_one_hot = onehot.fit_transform(corpus_freq.toarray())
     return freq, corpus_one_hot
+
 
 def getTrigramEncoding(text_array):
     freq = CountVectorizer(ngram_range=(3, 3), analyzer='char_wb') # trigram
@@ -79,8 +78,9 @@ def getTrigramEncoding(text_array):
 
 df = load_corpus()
 df_main = df[df['character'].isin(["JERRY", "ELAINE", "KRAMER", "GEORGE"])]
-freq, corpus_one_hot = getOneHotEncoding(df.txt)
-freq_trigrams, corpus_trigrams_one_hot = getTrigramEncoding(df.txt)
+# plotStuff(df_main)
+# freq, corpus_one_hot = getOneHotEncoding(df.txt)
+# freq_trigrams, corpus_trigrams_one_hot = getTrigramEncoding(df.txt)
 
 
 
