@@ -36,6 +36,9 @@ def load_corpus():
                    'episode_name': episode_name,
                    'season': season.astype(np.int),
                    'total_lines': total_lines_in_episode.astype(np.int)})
+
+    df = df.sort_values(by=['season', 'episode_num', 'start']).reset_index(drop=True)
+
     return df
 
 
@@ -76,11 +79,46 @@ def getTrigramEncoding(text_array):
 
     return freq, corpus_trigrams_one_hot
 
-df = load_corpus()
-df_main = df[df['character'].isin(["JERRY", "ELAINE", "KRAMER", "GEORGE"])]
-# plotStuff(df_main)
-# freq, corpus_one_hot = getOneHotEncoding(df.txt)
-# freq_trigrams, corpus_trigrams_one_hot = getTrigramEncoding(df.txt)
+def getSceneData(df):
+    df['time_from_prev'] = np.array(
+        [0] + [df.start[i] - df.end[i - 1] if df.episode_num[i] == df.episode_num[i - 1] else 0
+               for i in range(1, len(df.start))])
+
+    # notebook with histogram that "explains" why 1.8
+    df['new_scene'] = df['time_from_prev'] > 1.8
+    # Other than that, if it's a new episode we want new scene, used heuristic for that
+    df.loc[(df.time_from_prev == 0) & (df.start <= 2), 'new_scene'] = True
+
+    # Calculate features
+    text_for_scene = []
+    charcteres_scene = []
+    number_rows_scene = []
+    for i, row in df.iterrows():
+        if row['new_scene']:
+            text_for_scene.append(row.txt)
+            charcteres_scene.append(set([row.character]))
+            number_rows_scene.append(1)
+        else:
+            text_for_scene[-1] += "\n" + row.txt
+            charcteres_scene[-1].add(row.character)
+            number_rows_scene[-1] += 1
+
+    # append for each row the scene properties that we have
+    df['scene_text'] = [text_for_scene[i] for i in range(len(number_rows_scene)) for _ in range(number_rows_scene[i])]
+    df['scene_characters'] = [charcteres_scene[i] for i in range(len(number_rows_scene))
+                              for _ in range(number_rows_scene[i])]
+    df['n_scene_characters'] = df.scene_characters.str.len()
+
+    return df
+
+if __name__ == "__main__":
+    df = load_corpus()
+    df_main = df[df['character'].isin(["JERRY", "ELAINE", "KRAMER", "GEORGE"])]
+    # plotStuff(df_main)
+    # freq, corpus_one_hot = getOneHotEncoding(df.txt)
+    # freq_trigrams, corpus_trigrams_one_hot = getTrigramEncoding(df.txt)
+
+    print(df_main.head())
 
 
 
