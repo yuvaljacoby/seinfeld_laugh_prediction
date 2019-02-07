@@ -2,6 +2,7 @@ from seinfeld_laugh_corpus import corpus
 import numpy as np
 import pandas as pd
 import seaborn as sns
+import matplotlib.pyplot as plt
 
 seinfeld = corpus.load(fold_laughs=True)
 
@@ -10,6 +11,7 @@ episodes_len = [len(seinfeld.screenplays[i].lines) for i in np.arange(num_episod
 
 characters = np.array([seinfeld.screenplays[i][j].character for i in np.arange(num_episodes) for j in np.arange(episodes_len[i])])
 txt = np.array([seinfeld.screenplays[i][j].txt for i in np.arange(num_episodes) for j in np.arange(episodes_len[i])])
+num_words = np.array([len(seinfeld.screenplays[i][j].txt.split()) for i in np.arange(num_episodes) for j in np.arange(episodes_len[i])])
 start = np.array([seinfeld.screenplays[i][j].start for i in np.arange(num_episodes) for j in np.arange(episodes_len[i])])
 end = np.array([seinfeld.screenplays[i][j].end for i in np.arange(num_episodes) for j in np.arange(episodes_len[i])])
 is_funny = np.array([seinfeld.screenplays[i][j].is_funny for i in np.arange(num_episodes) for j in np.arange(episodes_len[i])])
@@ -23,6 +25,7 @@ total_lines_in_episode = np.array([episodes_len[i] for i in np.arange(num_episod
 
 df = pd.DataFrame({'character': characters,
                    'txt': txt,
+                   'num_words':num_words,
                    'start': start.astype(np.float),
                    'end': end.astype(np.float),
                    'length': (end.astype(np.float) - start.astype(np.float)),
@@ -36,9 +39,14 @@ df = pd.DataFrame({'character': characters,
 
 df_main = df[df['character'].isin(["JERRY", "ELAINE", "KRAMER", "GEORGE"])]
 
-# sentence length by character and by funniness
+# sentence time length by character and by funniness
 g = sns.FacetGrid(df_main, col='character', row='is_funny')
 g.map(sns.distplot, "length", bins=50, color='b')
+plt.show()
+
+# sentence length by character and by funniness
+g2 = sns.FacetGrid(df_main, col='character', row='is_funny')
+g2.map(sns.distplot, "num_words", bins=50, color='b')
 plt.show()
 
 print(df_main.head())
