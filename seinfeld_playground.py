@@ -5,6 +5,8 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 from sklearn.preprocessing import Binarizer
 from sklearn.feature_extraction.text import CountVectorizer
+import gensim
+
 
 def load_corpus():
     seinfeld = corpus.load(fold_laughs=True)
@@ -23,6 +25,7 @@ def load_corpus():
     season = np.array([seinfeld.screenplays[i].season for i in np.arange(num_episodes) for j in np.arange(episodes_len[i])])
     line_num = np.array([j for i in np.arange(num_episodes) for j in np.arange(episodes_len[i])])
     total_lines_in_episode = np.array([episodes_len[i] for i in np.arange(num_episodes) for j in np.arange(episodes_len[i])])
+
     df = pd.DataFrame({'character': characters,
                    'txt': txt,
                    'num_words': num_words,
@@ -79,10 +82,37 @@ def getTrigramEncoding(text_array):
 
     return freq, corpus_trigrams_one_hot
 
+def getWord2Vec(text_array, min_count=5, window_size=5, model_size=250, clean=False):
+    """
+    Method that handles the cleaning, tokenizing of the corpus and training of the model on that corpus.
+    :param text_array: The corpus, as an array of sentences
+    :param min_count: How many times a word must appear to be included
+    :param window_size: `window` is the maximum distance between the current and predicted word within a sentence.
+    :param model_size: the dimensionality of the feature vectors.
+    :param clean: Whether to clean the corpus
+    :return:
+    """
+    if clean:
+        corpus_for_word2vec = text_array
+        # TODO
+        # corpus_for_word2vec = clean_corpus(text_array)
+    else:
+        corpus_for_word2vec = text_array
+    corpus_for_word2vec = [sentence.split() for sentence in corpus_for_word2vec]
+    print('Starting to train model')
+    try:
+        model = gensim.models.Word2Vec(corpus_for_word2vec, min_count=min_count,
+                                            window=window_size, size=model_size, iter=50)
+    except RuntimeError:
+        print('No word appeared %d times, reran with min_count=1' % min_count)
+        model = gensim.models.Word2Vec(corpus_for_word2vec, min_count=1,
+                                            window=window_size, size=model_size, iter=50)
+    return model
+
 def getSceneData(df):
-    df['time_from_prev'] = np.array(
-        [0] + [df.start[i] - df.end[i - 1] if df.episode_num[i] == df.episode_num[i - 1] else 0
-               for i in range(1, len(df.start))])
+    df['time_from_prev'] = np.array([0] + [df.start[i] - df.end[i - 1]
+                                           if df.episode_num[i] == df.episode_num[i - 1] else 0
+                                           for i in range(1, len(df.start))])
 
     # notebook with histogram that "explains" why 1.8
     df['new_scene'] = df['time_from_prev'] > 1.8
@@ -114,12 +144,26 @@ def getSceneData(df):
 if __name__ == "__main__":
     df = load_corpus()
     df_main = df[df['character'].isin(["JERRY", "ELAINE", "KRAMER", "GEORGE"])]
+    model = getWord2Vec(df.txt)
+    print('here')
     # plotStuff(df_main)
     # freq, corpus_one_hot = getOneHotEncoding(df.txt)
     # freq_trigrams, corpus_trigrams_one_hot = getTrigramEncoding(df.txt)
 
-    print(df_main.head())
 
 
 
+"""
+Implementation ideas:
+1. Implement simple tfIdf model and classify sentence on its own
+2. Use word2vec instead and a CNN only.
+3. Use word2vec and CNN + LSTM model to use history of sequential sentences
+4. Use word2vec + other handcrafter features and CNN + LSTM
+5. Use transformer
 
+Visualization ideas:
+1. Show different insights with simple plots of funniness vs time/character etc
+2. Show TSNE of corpus
+3. Try and find different clusters depending on character or subject
+4. Try and visualize attention mechanism in LSTM
+"""
