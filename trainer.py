@@ -317,7 +317,7 @@ def train_sepCNN_model(train_texts, train_labels, val_texts, val_labels, learnin
             acc=history['val_acc'][-1], loss=history['val_loss'][-1]))
 
     # Save model.
-    model.save('tfidf_mlp_model.h5')
+    model.save('tfidf_sepCNN_model.h5')
     return history['val_acc'][-1], history['val_loss'][-1]
 
 if __name__ == "__main__":
