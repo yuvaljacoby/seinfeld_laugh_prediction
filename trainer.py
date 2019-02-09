@@ -283,7 +283,7 @@ def train_sepCNN_model(train_texts, train_labels, val_texts, val_labels, learnin
     """
 
     # Vectorize texts.
-    x_train, x_val = sequence_vectorize(train_texts, val_texts)
+    x_train, x_val, tokenizer_index = sequence_vectorize(train_texts, val_texts)
 
     # Create model instance.
     model = sepcnn_model(blocks=blocks,
