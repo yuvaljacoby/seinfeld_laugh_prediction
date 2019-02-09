@@ -146,5 +146,4 @@ if __name__ == "__main__":
     train_df = df.sample(frac=0.8,random_state=200)
     test_df = df.drop(train_df.index)
 
-    x_train , x_test = train_ngram_model((train_df.txt, train_df.is_funny.astype(np.float32)), (test_df.txt, test_df.is_funny.astype(np.float32)))
-    print('here')
+    history_val_acc, history_val_loss = train_ngram_model((train_df.txt, train_df.is_funny.astype(np.float32)), (test_df.txt, test_df.is_funny.astype(np.float32)))
