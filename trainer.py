@@ -1,6 +1,6 @@
 from seinfeld_playground import load_corpus
 
-    import tensorflow as tf
+import tensorflow as tf
 import numpy as np
 
 from sklearn.feature_extraction.text import TfidfVectorizer
@@ -100,7 +100,7 @@ def mlp_model(layers, units, dropout_rate, input_shape):
     model.add(Dense(units=op_units, activation=op_activation))
     return model
 
-def train_ngram_model(train_texts, train_labels, val_texts, val_labels, learning_rate=1e-3, epochs=100,
+def train_ngram_model(train_df, test_df, train_texts, train_labels, val_texts, val_labels, learning_rate=1e-3, epochs=100,
                       batch_size=128, layers=2, units=64, dropout_rate=0.2):
     """Trains n-gram model on the given dataset.
 
@@ -264,7 +264,7 @@ def sepcnn_model(blocks,
     model.add(Dense(op_units, activation=op_activation))
     return model
 
-def train_sepCNN_model(train_texts, train_labels, val_texts, val_labels, learning_rate=1e-3, epochs=100,
+def train_sepCNN_model(train_df, test_df, train_texts, train_labels, val_texts, val_labels, learning_rate=1e-3, epochs=100,
                       batch_size=128, blocks=2, filters=64, kernel_size=5, embedding_dim=128, pool_size=2, dropout_rate=0.2):
     """Trains n-gram model on the given dataset.
 
@@ -285,6 +285,20 @@ def train_sepCNN_model(train_texts, train_labels, val_texts, val_labels, learnin
     # Vectorize texts.
     x_train, x_val, tokenizer_index = sequence_vectorize(train_texts, val_texts)
 
+    char_encoding_train = np.zeroes(x_train.shape[0])
+    char_encoding_train[train_df.characters == 'JERRY'] = TOP_K + 1
+    char_encoding_train[train_df.characters == 'KRAMER'] = TOP_K + 2
+    char_encoding_train[train_df.characters == 'GEORGE'] = TOP_K + 3
+    char_encoding_train[train_df.characters == 'ELAINE'] = TOP_K + 4
+    x_train = np.stack(x_train, char_encoding_train)
+
+    char_encoding_test = np.zeroes(x_val.shape[0])
+    char_encoding_test[test_df.characters == 'JERRY'] = TOP_K + 1
+    char_encoding_test[test_df.characters == 'KRAMER'] = TOP_K + 2
+    char_encoding_test[test_df.characters == 'GEORGE'] = TOP_K + 3
+    char_encoding_test[test_df.characters == 'ELAINE'] = TOP_K + 4
+    x_val = np.stack(x_val, char_encoding_test)
+
     # Create model instance.
     model = sepcnn_model(blocks=blocks,
                          filters=filters,
@@ -293,7 +307,7 @@ def train_sepCNN_model(train_texts, train_labels, val_texts, val_labels, learnin
                          dropout_rate=dropout_rate,
                          pool_size=pool_size,
                          input_shape=x_train.shape[1:],
-                         num_features=MAX_SEQUENCE_LENGTH)
+                         num_features=tokenizer_index.shape[0]+4)
 
     # Compile model with learning parameters.
     loss = 'binary_crossentropy'
@@ -326,5 +340,6 @@ if __name__ == "__main__":
     train_df = df.sample(frac=0.8,random_state=200)
     test_df = df.drop(train_df.index)
 
-    # history_val_acc, history_val_loss = train_ngram_model(train_df.txt, train_df.is_funny.astype(np.float32), test_df.txt, test_df.is_funny.astype(np.float32))
-    history_val_acc_sepCNN, history_val_loss_sepCNN = train_sepCNN_model(train_df.txt, train_df.is_funny.astype(np.float32), test_df.txt, test_df.is_funny.astype(np.float32))
+    # history_val_acc, history_val_loss = train_ngram_model(train_df, test_df train_df.txt, train_df.is_funny.astype(np.float32), test_df.txt, test_df.is_funny.astype(np.float32))
+    history_val_acc_sepCNN, history_val_loss_sepCNN = train_sepCNN_model(train_df, test_df, train_df.txt, train_df.is_funny.astype(np.float32),
+                                                                         test_df.txt, test_df.is_funny.astype(np.float32))
