@@ -70,6 +70,7 @@ def plot_confusion_matrix(y_true, y_hats, labels, thresholds=None):
     if not thresholds:
         thresholds = calc_best_threshold(y_true, y_hats, labels)
 
+
     fig, axs = plt.subplots(len(y_hats), 1, sharex=True)
     fig.set_figheight(7)
 
@@ -83,11 +84,17 @@ def plot_confusion_matrix(y_true, y_hats, labels, thresholds=None):
                         for total, prec in
                         zip(cm.flatten(), cm_norm.flatten())]).reshape(2, 2)
 
-        sns.heatmap(cm, annot=l, fmt="", ax=axs[i], xticklabels=ticks_labels, yticklabels=ticks_labels)
+        if len(y_hats) > 1:
+            curent_ax = axs[i]
+        else:
+            curent_ax = axs
 
-        axs[i].set_title(labels[i])
+        sns.heatmap(cm, annot=l, fmt="", ax=curent_ax, xticklabels=ticks_labels, yticklabels=ticks_labels)
+
+
+        curent_ax .set_title(labels[i])
         # axs[i].set_xlabel('Predicted label')
-        axs[i].set_ylabel('True label')
+        curent_ax .set_ylabel('True label')
     plt.xlabel('Predicted label')
     # plt.ylabel('True label')
     plt.plot()
