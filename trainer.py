@@ -1,15 +1,13 @@
 from seinfeld_playground import load_corpus
+from train_utils import *
+from compare_models import *
 
 import tensorflow as tf
 import numpy as np
+import tensorflow_hub as hub
 
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.feature_selection import SelectKBest
 from sklearn.feature_selection import f_classif
 
-
-from tensorflow.python.keras.preprocessing import sequence
-from tensorflow.python.keras.preprocessing import text
 from tensorflow.python.keras import models
 from tensorflow.python.keras import initializers
 from tensorflow.python.keras import regularizers
@@ -20,62 +18,13 @@ from tensorflow.python.keras.layers import Embedding
 from tensorflow.python.keras.layers import SeparableConv1D
 from tensorflow.python.keras.layers import MaxPooling1D
 from tensorflow.python.keras.layers import GlobalAveragePooling1D
+from tensorflow.python.keras.layers import LSTM
+from tensorflow.python.keras.layers import Input
+from tensorflow.python.keras.layers import Concatenate
 
-
-# Vectorization parameters
-# Range (inclusive) of n-gram sizes for tokenizing text.
-NGRAM_RANGE = (1, 2)
-
-# Limit on the number of features. We use the top 20K features.
-TOP_K = 40000
-
-# Whether text should be split into word or character n-grams.
-# One of 'word', 'char'.
-TOKEN_MODE = 'word'
-
-# Minimum document/corpus frequency below which a token will be discarded.
-MIN_DOCUMENT_FREQUENCY = 2
-
-# Limit on the length of text sequences. Sequences longer than this
-# will be truncated.
-MAX_SEQUENCE_LENGTH = 20
-
-def ngram_vectorize(train_texts, train_labels, val_texts):
-    """Vectorizes texts as n-gram vectors.
-
-    1 text = 1 tf-idf vector the length of vocabulary of unigrams + bigrams.
-
-    # Arguments
-        train_texts: list, training text strings.
-        train_labels: np.ndarray, training labels.
-        val_texts: list, validation text strings.
-
-    # Returns
-        x_train, x_val: vectorized training and validation texts
-    """
-    # Create keyword arguments to pass to the 'tf-idf' vectorizer.
-    kwargs = {
-            'ngram_range': NGRAM_RANGE,  # Use 1-grams + 2-grams.
-            'dtype': 'int32',
-            'strip_accents': 'unicode',
-            'decode_error': 'replace',
-            'analyzer': TOKEN_MODE,  # Split text into word tokens.
-            'min_df': MIN_DOCUMENT_FREQUENCY,
-    }
-    vectorizer = TfidfVectorizer(**kwargs)
-
-    # Learn vocabulary from training texts and vectorize training texts.
-    x_train = vectorizer.fit_transform(train_texts)
-
-    # Vectorize validation texts.
-    x_val = vectorizer.transform(val_texts)
-
-    # Select top 'k' of the vectorized features.
-    selector = SelectKBest(f_classif, k=min(TOP_K, x_train.shape[1]))
-    selector.fit(x_train, train_labels)
-    x_train = selector.transform(x_train).astype('float32')
-    x_val = selector.transform(x_val).astype('float32')
-    return x_train, x_val
+# module_url = "https://tfhub.dev/google/universal-sentence-encoder-large/3"
+# Import the Universal Sentence Encoder's TF Hub module
+# embed = hub.Module(module_url)
 
 def mlp_model(layers, units, dropout_rate, input_shape):
     """Creates an instance of a multi-layer perceptron model.
@@ -152,39 +101,6 @@ def train_ngram_model(train_df, test_df, train_texts, train_labels, val_texts, v
     # Save model.
     model.save('tfidf_mlp_model.h5')
     return history['val_acc'][-1], history['val_loss'][-1]
-
-def sequence_vectorize(train_texts, val_texts):
-    """Vectorizes texts as sequence vectors.
-
-    1 text = 1 sequence vector with fixed length.
-
-    # Arguments
-        train_texts: list, training text strings.
-        val_texts: list, validation text strings.
-
-    # Returns
-        x_train, x_val, word_index: vectorized training and validation
-            texts and word index dictionary.
-    """
-    # Create vocabulary with training texts.
-    tokenizer = text.Tokenizer(num_words=TOP_K)
-    tokenizer.fit_on_texts(train_texts)
-
-    # Vectorize training and validation texts.
-    x_train = tokenizer.texts_to_sequences(train_texts)
-    x_val = tokenizer.texts_to_sequences(val_texts)
-
-    # Get max sequence length.
-    max_length = len(max(x_train, key=len))
-    if max_length > MAX_SEQUENCE_LENGTH:
-        max_length = MAX_SEQUENCE_LENGTH
-
-    # Fix sequence length to max value. Sequences shorter than the length are
-    # padded in the beginning and sequences longer are truncated
-    # at the beginning.
-    x_train = sequence.pad_sequences(x_train, maxlen=max_length)
-    x_val = sequence.pad_sequences(x_val, maxlen=max_length)
-    return x_train, x_val, tokenizer.word_index
 
 def sepcnn_model(blocks,
                  filters,
@@ -264,8 +180,53 @@ def sepcnn_model(blocks,
     model.add(Dense(op_units, activation=op_activation))
     return model
 
-def train_sepCNN_model(train_df, test_df, train_texts, train_labels, val_texts, val_labels, learning_rate=1e-3, epochs=100,
-                      batch_size=128, blocks=2, filters=64, kernel_size=5, embedding_dim=128, pool_size=2, dropout_rate=0.2):
+
+def CNN_LSTM_model(embedding_dim,
+                 dropout_rate,
+                 input_shape,
+                 num_features,
+                 use_pretrained_embedding=False,
+                 is_embedding_trainable=False,
+                 embedding_matrix=None):
+
+    # def UniversalEmbedding(x):
+    #     return embed(tf.squeeze(tf.cast(x, tf.string)),
+    #                  signature="default", as_dict=True)["default"]
+
+    sequence_input = Input(shape=(MAX_SEQUENCE_LENGTH-1,), dtype='int32')
+
+    # embedded_sequences = tf.keras.layers.Lambda(UniversalEmbedding, output_shape=(512,))(sequence_input)
+
+    embedded_sequences = tf.keras.layers.Embedding(num_features, embedding_dim, input_length=MAX_SEQUENCE_LENGTH-1)(sequence_input)
+    lstm = tf.keras.layers.Bidirectional(tf.keras.layers.LSTM
+                                         (128,
+                                          dropout=0.3,
+                                          return_sequences=True,
+                                          return_state=True,
+                                          recurrent_activation='relu',
+                                          recurrent_initializer='glorot_uniform'), name="bi_lstm_0")(embedded_sequences)
+
+    lstm, forward_h, forward_c, backward_h, backward_c = tf.keras.layers.Bidirectional(tf.keras.layers.LSTM(128,
+                                                                                      dropout=0.2,
+                                                                                      return_sequences=True,
+                                                                                      return_state=True,
+                                                                                      recurrent_activation='relu',
+                                                                                      recurrent_initializer='glorot_uniform'))(lstm)
+
+
+    state_h = Concatenate()([forward_h, backward_h])
+    state_c = Concatenate()([forward_c, backward_c])
+
+    context_vector, attention_weights = Attention(64)(lstm, state_h)
+
+    output = tf.keras.layers.Dense(1, activation='sigmoid')(context_vector)
+
+    model = tf.keras.Model(inputs=sequence_input, outputs=output)
+
+    return model
+
+
+def train_sequence_model(model, x_train, x_val, y_train, y_val, batch_size=32, learning_rate=1e-3, epochs=100):
     """Trains n-gram model on the given dataset.
 
     # Arguments
@@ -282,33 +243,6 @@ def train_sepCNN_model(train_df, test_df, train_texts, train_labels, val_texts, 
             in the training data.
     """
 
-    # Vectorize texts.
-    x_train, x_val, tokenizer_index = sequence_vectorize(train_texts, val_texts)
-
-    char_encoding_train = np.zeroes(x_train.shape[0])
-    char_encoding_train[train_df.characters == 'JERRY'] = TOP_K + 1
-    char_encoding_train[train_df.characters == 'KRAMER'] = TOP_K + 2
-    char_encoding_train[train_df.characters == 'GEORGE'] = TOP_K + 3
-    char_encoding_train[train_df.characters == 'ELAINE'] = TOP_K + 4
-    x_train = np.stack(x_train, char_encoding_train)
-
-    char_encoding_test = np.zeroes(x_val.shape[0])
-    char_encoding_test[test_df.characters == 'JERRY'] = TOP_K + 1
-    char_encoding_test[test_df.characters == 'KRAMER'] = TOP_K + 2
-    char_encoding_test[test_df.characters == 'GEORGE'] = TOP_K + 3
-    char_encoding_test[test_df.characters == 'ELAINE'] = TOP_K + 4
-    x_val = np.stack(x_val, char_encoding_test)
-
-    # Create model instance.
-    model = sepcnn_model(blocks=blocks,
-                         filters=filters,
-                         kernel_size=kernel_size,
-                         embedding_dim=embedding_dim,
-                         dropout_rate=dropout_rate,
-                         pool_size=pool_size,
-                         input_shape=x_train.shape[1:],
-                         num_features=tokenizer_index.shape[0]+4)
-
     # Compile model with learning parameters.
     loss = 'binary_crossentropy'
 
@@ -320,7 +254,7 @@ def train_sepCNN_model(train_df, test_df, train_texts, train_labels, val_texts, 
     callbacks = [tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=2)]
 
     # Train and validate model.
-    history = model.fit(x_train, train_labels, epochs=epochs, callbacks=callbacks, validation_data=(x_val, val_labels),
+    history = model.fit(x_train, y_train, epochs=epochs, callbacks=callbacks, validation_data=(x_val, y_val),
                         verbose=2, batch_size=batch_size)
 
     # Print results.
@@ -328,18 +262,70 @@ def train_sepCNN_model(train_df, test_df, train_texts, train_labels, val_texts, 
     print('Validation accuracy: {acc}, loss: {loss}'.format(
             acc=history['val_acc'][-1], loss=history['val_loss'][-1]))
 
+    result = model.evaluate(x_val, y_val)
+    print(result)
     # Save model.
-    model.save('tfidf_sepCNN_model.h5')
-    return history['val_acc'][-1], history['val_loss'][-1]
+    #model.save('tfidf_sepCNN_model.h5')
+    return history['val_acc'][-1], history['val_loss'][-1], model
+
+
+def get_sequence_data(df, add_character=False):
+    # split to train and test
+    train_df = df.sample(frac=0.8, random_state=200)
+    test_df = df.drop(train_df.index)
+
+    # Vectorize texts.
+    x_train, x_val, tokenizer_index = sequence_vectorize(train_df.txt, test_df.txt)
+    y_train = train_df.is_funny
+    y_val = test_df.is_funny
+
+    if add_character:
+        char_encoding_train = np.zeros(x_train.shape[0])
+        char_encoding_train[train_df.character == 'JERRY'] = len(tokenizer_index) + 1
+        char_encoding_train[train_df.character == 'KRAMER'] = len(tokenizer_index) + 2
+        char_encoding_train[train_df.character == 'GEORGE'] = len(tokenizer_index) + 3
+        char_encoding_train[train_df.character == 'ELAINE'] = len(tokenizer_index) + 4
+        x_train = np.hstack([x_train, char_encoding_train.reshape((-1, 1))])
+
+        char_encoding_test = np.zeros(x_val.shape[0])
+        char_encoding_test[test_df.character == 'JERRY'] = len(tokenizer_index) + 1
+        char_encoding_test[test_df.character == 'KRAMER'] = len(tokenizer_index) + 2
+        char_encoding_test[test_df.character == 'GEORGE'] = len(tokenizer_index) + 3
+        char_encoding_test[test_df.character == 'ELAINE'] = len(tokenizer_index) + 4
+        x_val = np.hstack([x_val, char_encoding_test.reshape((-1, 1))])
+
+    return tokenizer_index, x_train, x_val, y_train, y_val, train_df, test_df
 
 if __name__ == "__main__":
     # load corpus
     df = load_corpus()
 
-    # split to train and test
-    train_df = df.sample(frac=0.8,random_state=200)
-    test_df = df.drop(train_df.index)
+    tokenizer_index, x_train, x_val, y_train, y_val, train_df, test_df = get_sequence_data(df)
+
+    # Create model instance.
+    # model = sepcnn_model(blocks=3,
+    #                      filters=32,
+    #                      kernel_size=3,
+    #                      embedding_dim=128,
+    #                      dropout_rate=0.3,
+    #                      pool_size=2,
+    #                      input_shape=x_train.shape[1:],
+    #                      num_features=len(tokenizer_index)+1)
+
+    model = CNN_LSTM_model(embedding_dim=128,
+                         dropout_rate=0.3,
+                         input_shape=x_train.shape[1:],
+                         num_features=len(tokenizer_index)+1)
 
     # history_val_acc, history_val_loss = train_ngram_model(train_df, test_df train_df.txt, train_df.is_funny.astype(np.float32), test_df.txt, test_df.is_funny.astype(np.float32))
-    history_val_acc_sepCNN, history_val_loss_sepCNN = train_sepCNN_model(train_df, test_df, train_df.txt, train_df.is_funny.astype(np.float32),
-                                                                         test_df.txt, test_df.is_funny.astype(np.float32))
+    history_val_acc_sepCNN, history_val_loss_sepCNN, model_fit = train_sequence_model(model,
+                                                                         x_train,
+                                                                         x_val,
+                                                                         y_train,
+                                                                         y_val,
+                                                                         batch_size=200)
+    y_hat_val = model_fit.predict(x_val)
+
+
+    compare_models_roc_curve(y_val, [y_hat_val], ['lstm'])
+    plot_confusion_matrix(y_val, [y_hat_val], ['lstm'])
