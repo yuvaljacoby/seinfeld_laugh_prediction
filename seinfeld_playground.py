@@ -27,18 +27,18 @@ def load_corpus():
     total_lines_in_episode = np.array([episodes_len[i] for i in np.arange(num_episodes) for j in np.arange(episodes_len[i])])
 
     df = pd.DataFrame({'character': characters,
-                   'txt': txt,
-                   'num_words': num_words,
-                   'start': start.astype(np.float),
-                   'end': end.astype(np.float),
-                   'length': (end.astype(np.float) - start.astype(np.float)),
-                   'is_funny': is_funny.astype(np.bool),
-                   'laugh_time': laugh_time.astype(np.float),
-                   'episode_num': episode_num.astype(np.int),
-                   'line_num': line_num.astype(np.int),
-                   'episode_name': episode_name,
-                   'season': season.astype(np.int),
-                   'total_lines': total_lines_in_episode.astype(np.int)})
+                       'txt': txt,
+                       'num_words': num_words,
+                       'start': start.astype(np.float),
+                       'end': end.astype(np.float),
+                       'length': (end.astype(np.float) - start.astype(np.float)),
+                       'is_funny': is_funny.astype(np.bool),
+                       'laugh_time': laugh_time.astype(np.float),
+                       'episode_num': episode_num.astype(np.int),
+                       'line_num': line_num.astype(np.int),
+                       'episode_name': episode_name,
+                       'season': season.astype(np.int),
+                       'total_lines': total_lines_in_episode.astype(np.int)})
 
     df = df.sort_values(by=['season', 'episode_num', 'start']).reset_index(drop=True)
 
@@ -82,6 +82,7 @@ def getTrigramEncoding(text_array):
 
     return freq, corpus_trigrams_one_hot
 
+
 def getWord2Vec(text_array, min_count=5, window_size=5, model_size=250, clean=False):
     """
     Method that handles the cleaning, tokenizing of the corpus and training of the model on that corpus.
@@ -108,6 +109,7 @@ def getWord2Vec(text_array, min_count=5, window_size=5, model_size=250, clean=Fa
         model = gensim.models.Word2Vec(corpus_for_word2vec, min_count=1,
                                             window=window_size, size=model_size, iter=50)
     return model
+
 
 def getSceneData(df):
     df['time_from_prev'] = np.array([0] + [df.start[i] - df.end[i - 1]
@@ -144,10 +146,11 @@ def getSceneData(df):
 if __name__ == "__main__":
     df = load_corpus()
     df_main = df[df['character'].isin(["JERRY", "ELAINE", "KRAMER", "GEORGE"])]
-    model = getWord2Vec(df.txt)
+    # model = getWord2Vec(df.txt)
     print('here')
     # plotStuff(df_main)
-    # freq, corpus_one_hot = getOneHotEncoding(df.txt)
+    freq, corpus_one_hot = getOneHotEncoding(df.txt)
+    print(corpus_one_hot.shape)
     # freq_trigrams, corpus_trigrams_one_hot = getTrigramEncoding(df.txt)
 
 
