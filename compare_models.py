@@ -98,3 +98,4 @@ def plot_confusion_matrix(y_true, y_hats, labels, thresholds=None):
     plt.xlabel('Predicted label')
     # plt.ylabel('True label')
     plt.plot()
+    plt.show()
