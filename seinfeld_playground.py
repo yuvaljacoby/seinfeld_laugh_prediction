@@ -123,12 +123,12 @@ def getWord2Vec(text_array, min_count=5, window_size=5, model_size=250, clean=Fa
 
 
 def getSceneData(df):
-    df['time_from_prev'] = np.array([0] + [df.start[i] - df.end[i - 1]
+    df.loc[:, 'time_from_prev'] = np.array([0] + [df.start[i] - df.end[i - 1]
                                            if df.episode_num[i] == df.episode_num[i - 1] else 0
                                            for i in range(1, len(df.start))])
 
     # notebook with histogram that "explains" why 1.8
-    df['new_scene'] = df['time_from_prev'] > 1.8
+    df.loc[:, 'new_scene'] = df['time_from_prev'] > 1.8
     # Other than that, if it's a new episode we want new scene, used heuristic for that
     df.loc[(df.time_from_prev == 0) & (df.start <= 2), 'new_scene'] = True
 
@@ -158,12 +158,12 @@ def getSceneData(df):
             scene_number_in_episode.append(scene_counter)
 
     # append for each row the scene properties that we have
-    df['scene_text'] = [text_for_scene[i] for i in range(len(number_rows_scene)) for _ in range(number_rows_scene[i])]
-    df['scene_characters'] = [charcteres_scene[i] for i in range(len(number_rows_scene))
+    df.loc[:, 'scene_text'] = [text_for_scene[i] for i in range(len(number_rows_scene)) for _ in range(number_rows_scene[i])]
+    df.loc[:, 'scene_characters'] = [charcteres_scene[i] for i in range(len(number_rows_scene))
                               for _ in range(number_rows_scene[i])]
-    df['n_scene_characters'] = df.scene_characters.str.len()
-    df['scene_number_in_episode'] = scene_number_in_episode
-    df['global_scene_number'] = create_index_usingduplicated(df, ['global_episode_num', 'scene_number_in_episode'])
+    df.loc[:, 'n_scene_characters'] = df.scene_characters.str.len()
+    df.loc[:, 'scene_number_in_episode'] = scene_number_in_episode
+    df.loc[:, 'global_scene_number'] = create_index_usingduplicated(df, ['global_episode_num', 'scene_number_in_episode'])
     return df
 
 
