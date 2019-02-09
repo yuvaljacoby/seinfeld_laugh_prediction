@@ -1,4 +1,4 @@
-from sklearn.model_selection import train_test_split
+import numpy as np
 
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.feature_selection import SelectKBest
@@ -26,16 +26,40 @@ MIN_DOCUMENT_FREQUENCY = 2
 MAX_SEQUENCE_LENGTH = 20
 
 
-def split_train_test(X, y, test_ratio=0.2):
+def scene_permutation(df):
+    scene_groups = df.groupby('global_scene_number').groups
+    order = np.random.permutation(list(scene_groups.keys()))
+    order_idx = []
+
+    for i in order:
+        order_idx = np.hstack((order_idx, scene_groups[i].values))
+
+    return df.loc[order_idx, :].reset_index()
+
+
+def split_train_test(df, test_ratio=0.2):
     '''
     Split data to train and test based on episode --> episodes will be fully in train / test
-    :param X: Features
-    :param y: labels
+    Then shuffle the scenes inside each split --> each scene will stay in order (but the scene after can from different time)
+    Uses global_episode_num and global_scene_number, start
+    :param df: df with features (using global_episode_num)
     :param test_ratio: float [0,1] ratio of samples to keep in test
-    :return: X_train, X_test, y_train, y_test
+    :return: df_train, df_test
     '''
 
-    return train_test_split(X, y, test_ratio)
+    df = df.sort_values(by=['global_episode_num', 'global_scene_number', 'start'])
+    test_episode = np.random.choice(df.global_episode_num,
+                                    size=int(len(df.global_episode_num.unique()) * test_ratio),
+                                    replace=False)
+    train_episode = set(df.global_episode_num) - set(test_episode)
+
+    df_train = df[df.global_episode_num.isin(train_episode)]
+    df_test = df[df.global_episode_num.isin(test_episode)]
+
+    df_train = scene_permutation(df_train)
+    df_test = scene_permutation(df_test)
+    return df_train, df_test
+
 
 def ngram_vectorize(train_texts, train_labels, val_texts):
     """Vectorizes texts as n-gram vectors.
