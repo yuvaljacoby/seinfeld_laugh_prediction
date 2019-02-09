@@ -8,6 +8,12 @@ from sklearn.feature_extraction.text import CountVectorizer
 import gensim
 
 
+def create_index_usingduplicated(df, grouping_cols):
+    df.sort_values(grouping_cols, inplace=True)
+    duplicated = df.duplicated(subset=grouping_cols, keep='first')
+    new_group = ~duplicated
+    return new_group.cumsum()
+
 def load_corpus():
     seinfeld = corpus.load(fold_laughs=True)
     num_episodes = len(seinfeld.screenplays)
@@ -42,6 +48,7 @@ def load_corpus():
 
     df = df.sort_values(by=['season', 'episode_num', 'start']).reset_index(drop=True)
 
+    df['global_episode_num'] = create_index_usingduplicated(df, ['season', 'episode_num'])
     return df
 
 
@@ -64,13 +71,17 @@ def plotStuff(df_to_plot):
     plt.show()
 
 
-def getOneHotEncoding(text_array):
-    freq = CountVectorizer()
-    corpus_freq = freq.fit_transform(text_array)
+def getOneHotEncoding(text_array, is_binary=True):
+    '''
+    Creatres a one hot encoding / binary encoding for a given array
+    :param text_array: Array to encode
+    :param is_binary: to return a OneHotEncoding or BinaryEncoding
+    :return: vectorizer, array shape (text_array.shape[0], # unique words(text_array)
+    '''
+    cv = CountVectorizer(binary=is_binary)
+    freq = cv.fit_transform(text_array)
 
-    onehot = Binarizer()
-    corpus_one_hot = onehot.fit_transform(corpus_freq.toarray())
-    return freq, corpus_one_hot
+    return cv, freq
 
 
 def getTrigramEncoding(text_array):
@@ -125,23 +136,36 @@ def getSceneData(df):
     text_for_scene = []
     charcteres_scene = []
     number_rows_scene = []
+    scene_number_in_episode = []
+    scene_counter = 0
+    prev_episode = None
     for i, row in df.iterrows():
         if row['new_scene']:
             text_for_scene.append(row.txt)
             charcteres_scene.append(set([row.character]))
             number_rows_scene.append(1)
+
+            if prev_episode != row.episode_num:
+                scene_counter = 0
+
+            scene_counter += 1
+            scene_number_in_episode.append(scene_counter)
+            prev_episode = row.episode_num
         else:
             text_for_scene[-1] += "\n" + row.txt
             charcteres_scene[-1].add(row.character)
             number_rows_scene[-1] += 1
+            scene_number_in_episode.append(scene_counter)
 
     # append for each row the scene properties that we have
     df['scene_text'] = [text_for_scene[i] for i in range(len(number_rows_scene)) for _ in range(number_rows_scene[i])]
     df['scene_characters'] = [charcteres_scene[i] for i in range(len(number_rows_scene))
                               for _ in range(number_rows_scene[i])]
     df['n_scene_characters'] = df.scene_characters.str.len()
-
+    df['scene_number_in_episode'] = scene_number_in_episode
+    df['global_scene_number'] = create_index_usingduplicated(df, ['global_episode_num', 'scene_number_in_episode'])
     return df
+
 
 if __name__ == "__main__":
     df = load_corpus()
