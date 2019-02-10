@@ -78,7 +78,9 @@ def plot_confusion_matrix(y_true, y_hats, labels, thresholds=None):
     for i, y_hat in enumerate(y_hats):
         y_hat_binary = y_hat >= thresholds[labels[i]]
         cm = confusion_matrix(y_true, y_hat_binary)
-        cm_norm = cm / cm.sum(axis=0) * 100
+        # TODO: Not sure if to divide by axis 0 or 1
+        cm_norm = cm.astype('float') / cm.sum(axis=0) * 100
+        # cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
 
         l = np.asarray(["{0} \n({1:.2f}%)".format(total, prec)
                         for total, prec in
