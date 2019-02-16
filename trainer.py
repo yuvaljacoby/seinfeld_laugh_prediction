@@ -103,10 +103,11 @@ def sepcnn_model(blocks,
                  pool_size,
                  input_shape,
                  num_features,
+                 num_additional_features=None,
                  use_pretrained_embedding=False,
                  is_embedding_trainable=False,
                  embedding_matrix=None,
-                 use_characters=True):
+                 use_additional_features=True):
     """Creates an instance of a separable CNN model.
 
     # Arguments
@@ -136,6 +137,7 @@ def sepcnn_model(blocks,
     else:
         embedded_sequences = Embedding(num_features, embedding_dim, input_length=input_shape[0])(sequence_input)
 
+    print(embedded_sequences.shape)
     def conv_block(input_layer):
         dropout = Dropout(rate=dropout_rate)(input_layer)
         conv1 = SeparableConv1D(filters=filters,
@@ -144,12 +146,14 @@ def sepcnn_model(blocks,
                                   bias_initializer='random_uniform',
                                   depthwise_initializer='random_uniform',
                                   padding='same')(dropout)
+        print(conv1.shape)
         conv2 = SeparableConv1D(filters=filters,
                                   kernel_size=kernel_size,
                                   activation='relu',
                                   bias_initializer='random_uniform',
                                   depthwise_initializer='random_uniform',
                                   padding='same')(conv1)
+        print(conv2.shape)
         max_pool = MaxPooling1D(pool_size=pool_size)(conv2)
 
         return max_pool
@@ -171,8 +175,8 @@ def sepcnn_model(blocks,
                           padding='same')(conv_a)
     avg_pool = GlobalAveragePooling1D()(conv_b)
     affine1 = Dense(64, activation='relu')(avg_pool)
-    if use_characters:
-        char_one_hot = Input(shape=(4,), name='char_num')
+    if use_additional_features:
+        char_one_hot = Input(shape=(num_additional_features,), name='char_num')
         concat_layer = Concatenate()([affine1, char_one_hot])
         # affine2 = Dense(op_units, activation='relu')(concat_layer)
         output_layer = Dense(op_units, activation=op_activation, name='final_output')(concat_layer)
@@ -188,10 +192,11 @@ def LSTM_model(embedding_dim,
                dropout_rate,
                input_shape,
                num_features,
+               num_additional_features=None,
                use_pretrained_embedding=False,
                is_embedding_trainable=False,
                embedding_matrix=None,
-               use_characters=True):
+               use_additional_features=True):
 
     sequence_input = Input(shape=(input_shape[0],), dtype='int32')
 
@@ -225,23 +230,23 @@ def LSTM_model(embedding_dim,
 
     lstm_pred = tf.keras.layers.Dense(1, activation='sigmoid')(context_vector)
 
-    if use_characters:
-        char_one_hot = Input(shape=(4,), name='char_num')
+    if use_additional_features:
+        char_one_hot = Input(shape=(num_additional_features,), name='char_num')
         x = Concatenate()([context_vector, char_one_hot])
         affine1 = tf.keras.layers.Dense(64, activation='relu')(x)
     else:
         affine1 = tf.keras.layers.Dense(64, activation='relu')(context_vector)
     affine2 = tf.keras.layers.Dense(64, activation='relu')(affine1)
     output = tf.keras.layers.Dense(1, activation='sigmoid', name='final_output')(affine2)
-    if use_characters:
+    if use_additional_features:
         model = tf.keras.Model(inputs=[sequence_input, char_one_hot], outputs=[output, lstm_pred])
     else:
         model = tf.keras.Model(inputs=sequence_input, outputs=[output, lstm_pred])
     return model
 
 
-def train_sequence_model(model, x_train, x_val, y_train, y_val, char_one_hots_train=None,
-                         char_one_hots_val=None, multiple_outputs=False, batch_size=32, learning_rate=1e-3, epochs=100):
+def train_sequence_model(model, x_train, x_val, y_train, y_val, additional_features_train=None,
+                         additional_features_val=None, multiple_outputs=False, batch_size=32, learning_rate=1e-3, epochs=100):
     """Trains n-gram model on the given dataset.
 
     # Arguments
@@ -272,14 +277,14 @@ def train_sequence_model(model, x_train, x_val, y_train, y_val, char_one_hots_tr
     callbacks = [tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=2)]
 
     # Train and validate model.
-    if char_one_hots_train is not None:
+    if additional_features_train is not None:
         if multiple_outputs:
-            history = model.fit([x_train, char_one_hots_train], [y_train, y_train], epochs=epochs, callbacks=callbacks,
-                                validation_data=([x_val, char_one_hots_val], [y_val, y_val]),
+            history = model.fit([x_train, additional_features_train], [y_train, y_train], epochs=epochs, callbacks=callbacks,
+                                validation_data=([x_val, additional_features_val], [y_val, y_val]),
                                 verbose=2, batch_size=batch_size)
         else:
-            history = model.fit([x_train, char_one_hots_train], y_train, epochs=epochs, callbacks=callbacks,
-                    validation_data=([x_val, char_one_hots_val], y_val),
+            history = model.fit([x_train, additional_features_train], y_train, epochs=epochs, callbacks=callbacks,
+                    validation_data=([x_val, additional_features_val], y_val),
                     verbose=2, batch_size=batch_size)
     else:
         if multiple_outputs:
@@ -292,15 +297,15 @@ def train_sequence_model(model, x_train, x_val, y_train, y_val, char_one_hots_tr
                                 verbose=2, batch_size=batch_size)
     # Print results.
     history = history.history
-    if char_one_hots_train is not None:
+    if additional_features_train is not None:
         if multiple_outputs:
             print('Validation accuracy: {acc}, loss: {loss}'.format(acc=history['final_output_acc'][-1], loss=history['final_output_loss'][-1]))
-            result = model.evaluate([x_val, char_one_hots_val], [y_val, y_val])
+            result = model.evaluate([x_val, additional_features_val], [y_val, y_val])
             print(result)
             return history['final_output_acc'][-1], history['final_output_loss'][-1], model
         else:
             print('Validation accuracy: {acc}, loss: {loss}'.format(acc=history['val_acc'][-1], loss=history['val_loss'][-1]))
-            result = model.evaluate([x_val, char_one_hots_val], y_val)
+            result = model.evaluate([x_val, additional_features_val], y_val)
             print(result)
             return history['val_acc'][-1], history['val_loss'][-1], model
     else:
@@ -346,20 +351,25 @@ def get_sequence_data(df_train, df_test, add_character=False):
 
 if __name__ == "__main__":
     # load corpus
+    show = False
     df = load_corpus()
     df_scene = getSceneData(df)
     df_train, df_test = split_train_test(df, 0.2)
-    char_one_hots_train = np.zeros((df_train.shape[0], 4))
-    char_one_hots_train[df_train.character == "JERRY", 0] = 1
-    char_one_hots_train[df_train.character == "GEORGE", 1] = 1
-    char_one_hots_train[df_train.character == "ELAINE", 2] = 1
-    char_one_hots_train[df_train.character == "KRAMER", 3] = 1
+    additional_features_train = np.zeros((df_train.shape[0], 6))
+    additional_features_train[df_train.character == "JERRY", 0] = 1
+    additional_features_train[df_train.character == "GEORGE", 1] = 1
+    additional_features_train[df_train.character == "ELAINE", 2] = 1
+    additional_features_train[df_train.character == "KRAMER", 3] = 1
+    additional_features_train[:, 4] = df_train.start
+    additional_features_train[:, 5] = df_train.length
 
-    char_one_hots_val = np.zeros((df_test.shape[0], 4))
-    char_one_hots_val[df_test.character == "JERRY", 0] = 1
-    char_one_hots_val[df_test.character == "GEORGE", 1] = 1
-    char_one_hots_val[df_test.character == "ELAINE", 2] = 1
-    char_one_hots_val[df_test.character == "KRAMER", 3] = 1
+    additional_features_val = np.zeros((df_test.shape[0], 6))
+    additional_features_val[df_test.character == "JERRY", 0] = 1
+    additional_features_val[df_test.character == "GEORGE", 1] = 1
+    additional_features_val[df_test.character == "ELAINE", 2] = 1
+    additional_features_val[df_test.character == "KRAMER", 3] = 1
+    additional_features_val[:, 4] = df_test.start
+    additional_features_val[:, 5] = df_test.length
 
     print("Preparing sequential data")
     tokenizer_index, x_train, x_val, y_train, y_val = get_sequence_data(df_train, df_test)
@@ -376,27 +386,29 @@ if __name__ == "__main__":
                              pool_size=2,
                              input_shape=x_train.shape[1:],
                              num_features=len(tokenizer_index)+1,
+                             num_additional_features=additional_features_train.shape[1],
                              embedding_matrix=embedding_matrix,
                              use_pretrained_embedding=True,
                              is_embedding_trainable=True,
-                             use_characters=use_chars_CNN)
+                             use_additional_features=use_chars_CNN)
     history_val_acc_cnn, history_val_loss_cnn, model_cnn_fit = train_sequence_model(model_cnn,
                                                                                     x_train,
                                                                                     x_val,
                                                                                     y_train,
                                                                                     y_val,
                                                                                     batch_size=32,
-                                                                                    epochs=5,
+                                                                                    epochs=10,
                                                                                     multiple_outputs=False,
-                                                                                    char_one_hots_train=char_one_hots_train,
-                                                                                    char_one_hots_val=char_one_hots_val)
+                                                                                    additional_features_train=additional_features_train,
+                                                                                    additional_features_val=additional_features_val)
     print("Finish training cnn model")
     if use_chars_CNN:
-        y_hat_val_cnn = model_cnn_fit.predict([x_val,char_one_hots_val])
+        y_hat_val_cnn = model_cnn_fit.predict([x_val,additional_features_val])
     else:
         y_hat_val_cnn = model_cnn_fit.predict(x_val)
-    compare_models_roc_curve(y_val, [y_hat_val_cnn], ['CNN'])
-    plot_confusion_matrix(y_val, [y_hat_val_cnn], ['CNN'])
+    compare_models_roc_curve(y_val, [y_hat_val_cnn], ['CNN'], show)
+    if show:
+        plot_confusion_matrix(y_val, [y_hat_val_cnn], ['CNN'])
 
     from basic_trainers import Model_OneHotEncoding
     print("Training LSTM model")
@@ -404,6 +416,7 @@ if __name__ == "__main__":
                             dropout_rate=0.3,
                             input_shape=x_train.shape[1:],
                             num_features=len(tokenizer_index) + 1,
+                            num_additional_features=additional_features_train.shape[1],
                             embedding_matrix=embedding_matrix,
                             use_pretrained_embedding=True,
                             is_embedding_trainable=True)
@@ -414,15 +427,16 @@ if __name__ == "__main__":
                                                                                        x_val,
                                                                                        y_train,
                                                                                        y_val,
-                                                                                       char_one_hots_train=char_one_hots_train,
-                                                                                       char_one_hots_val=char_one_hots_val,
-                                                                                       batch_size=200,
-                                                                                       epochs=5,
+                                                                                       additional_features_train=additional_features_train,
+                                                                                       additional_features_val=additional_features_val,
+                                                                                       batch_size=32,
+                                                                                       epochs=10,
                                                                                        multiple_outputs=True)
 
-    y_hat_val_lstm = model_lstm_fit.predict([x_val, char_one_hots_val])[0]
-    compare_models_roc_curve(y_val, [y_hat_val_lstm], ['lstm'])
-    plot_confusion_matrix(y_val, [y_hat_val_lstm], ['lstm'])
+    y_hat_val_lstm = model_lstm_fit.predict([x_val, additional_features_val])[0]
+    compare_models_roc_curve(y_val, [y_hat_val_lstm], ['lstm'], show)
+    if show:
+        plot_confusion_matrix(y_val, [y_hat_val_lstm], ['lstm'])
 
     print("Finished training LSTM\n\n")
 
@@ -433,10 +447,11 @@ if __name__ == "__main__":
                             dropout_rate=0.3,
                             input_shape=x_train.shape[1:],
                             num_features=len(tokenizer_index) + 1,
+                            num_additional_features=additional_features_train.shape[1],
                             embedding_matrix=embedding_matrix,
                             use_pretrained_embedding=True,
                             is_embedding_trainable=True,
-                            use_characters=False)
+                            use_additional_features=False)
 
     # history_val_acc, history_val_loss = train_ngram_model(train_df, test_df train_df.txt, train_df.is_funny.astype(np.float32), test_df.txt, test_df.is_funny.astype(np.float32))
     history_val_acc_lstm_no_char, history_val_loss_lstm_no_char, model_lstm_no_char_fit = train_sequence_model(model_lstm_no_char,
@@ -444,13 +459,14 @@ if __name__ == "__main__":
                                                                                                                x_val,
                                                                                                                y_train,
                                                                                                                y_val,
-                                                                                                               batch_size=200,
-                                                                                                               epochs=5,
+                                                                                                               batch_size=32,
+                                                                                                               epochs=10,
                                                                                                                multiple_outputs=True)
 
     y_hat_val_lstm_no_char = model_lstm_no_char_fit.predict(x_val)[0]
-    compare_models_roc_curve(y_val, [y_hat_val_lstm_no_char], ['lstm_no_char'])
-    plot_confusion_matrix(y_val, [y_hat_val_lstm_no_char], ['lstm_no_char'])
+    compare_models_roc_curve(y_val, [y_hat_val_lstm_no_char], ['lstm_no_char'], show)
+    if show:
+        plot_confusion_matrix(y_val, [y_hat_val_lstm_no_char], ['lstm_no_char'])
 
     print("Finished training LSTM no char \n\n")
 
