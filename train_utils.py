@@ -133,6 +133,24 @@ def sequence_vectorize(train_texts, val_texts):
     return x_train, x_val, tokenizer.word_index
 
 
+def get_glove_embedding(num_features, tokenizer_index):
+        EMBEDDING_DIM=100
+        embeddings_index = {}
+        with open('glove.6B.100d.txt', 'r') as f:
+            for line in f:
+                values = line.split()
+                word = values[0]
+                coefs = np.asarray(values[1:], dtype='float32')
+                embeddings_index[word] = coefs
+
+        embedding_matrix = np.zeros((num_features, EMBEDDING_DIM))
+        for word, i in tokenizer_index.items():
+            embedding_vector = embeddings_index.get(word)
+            # TODO: stem words
+            if embedding_vector is not None:
+                # words not found in embedding index will be all-zeros.
+                embedding_matrix[i] = embedding_vector
+        return embedding_matrix
 
 class Attention(tf.keras.Model):
     def __init__(self, units):

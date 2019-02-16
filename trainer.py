@@ -174,53 +174,34 @@ def sepcnn_model(blocks,
     return model
 
 
-def CNN_LSTM_model(embedding_dim,
-                   dropout_rate,
-                   input_shape,
-                   tokenizer_index,
-                   num_features,
-                   use_pretrained_embedding=False,
-                   is_embedding_trainable=False,
-                   embedding_matrix=None):
-    def GetGloveEmbading():
-        EMBEDDING_DIM = 100
-        # import os
-        embeddings_index = {}
-        with open('glove.6B.100d.txt', 'r') as f:
-            for line in f:
-                values = line.split()
-                word = values[0]
-                coefs = np.asarray(values[1:], dtype='float32')
-                embeddings_index[word] = coefs
-
-        embedding_matrix = np.zeros((num_features, EMBEDDING_DIM))
-        for word, i in tokenizer_index.items():
-            embedding_vector = embeddings_index.get(word)
-            # TODO: stem words
-            if embedding_vector is not None:
-                # words not found in embedding index will be all-zeros.
-                embedding_matrix[i] = embedding_vector
-        return embedding_matrix
+def LSTM_model(embedding_dim,
+               dropout_rate,
+               input_shape,
+               tokenizer_index,
+               num_features,
+               use_pretrained_embedding=False,
+               is_embedding_trainable=False,
+               embedding_matrix=None):
 
     sequence_input = Input(shape=(MAX_SEQUENCE_LENGTH - 1,), dtype='int32')
 
     # embedded_sequences = tf.keras.layers.Lambda(UniversalEmbedding, output_shape=(512,))(sequence_input)
-
-    # embedded_sequences = tf.keras.layers.Embedding(num_features, embedding_dim, input_length=MAX_SEQUENCE_LENGTH-1)(sequence_input)
-    embedding_matrix = GetGloveEmbading()
-    embedded_sequences = tf.keras.layers.Embedding(num_features, embedding_matrix.shape[1], weights=[embedding_matrix],
-                                                   input_length=MAX_SEQUENCE_LENGTH - 1)(sequence_input)
+    if use_pretrained_embedding is True:
+        embedded_sequences = tf.keras.layers.Embedding(num_features, embedding_matrix.shape[1], weights=[embedding_matrix],
+                                                       input_length=MAX_SEQUENCE_LENGTH - 1, trainable=is_embedding_trainable)(sequence_input)
+    else:
+        embedded_sequences = tf.keras.layers.Embedding(num_features, embedding_dim, input_length=MAX_SEQUENCE_LENGTH-1)(sequence_input)
 
     lstm = tf.keras.layers.Bidirectional(tf.keras.layers.LSTM
                                          (128,
-                                          dropout=0.3,
+                                          dropout=dropout_rate,
                                           return_sequences=True,
                                           return_state=True,
                                           recurrent_activation='relu',
                                           recurrent_initializer='glorot_uniform'), name="bi_lstm_0")(embedded_sequences)
 
     lstm, forward_h, forward_c, backward_h, backward_c = tf.keras.layers.Bidirectional(tf.keras.layers.LSTM(128,
-                                                                                                            dropout=0.2,
+                                                                                                            dropout=dropout_rate,
                                                                                                             return_sequences=True,
                                                                                                             return_state=True,
                                                                                                             recurrent_activation='relu',
@@ -316,25 +297,21 @@ if __name__ == "__main__":
     df_train, df_test = split_train_test(df, 0.2)
 
     tokenizer_index, x_train, x_val, y_train, y_val = get_sequence_data(df_train, df_test)
+    embedding_matrix = get_glove_embedding(len(tokenizer_index) + 1, tokenizer_index)
 
     # Create model instance.
-    # model = sepcnn_model(blocks=3,
-    #                      filters=32,
-    #                      kernel_size=3,
-    #                      embedding_dim=128,
-    #                      dropout_rate=0.3,
-    #                      pool_size=2,
-    #                      input_shape=x_train.shape[1:],
-    #                      num_features=len(tokenizer_index)+1)
-
-    model = CNN_LSTM_model(embedding_dim=128,
-                           dropout_rate=0.3,
-                           input_shape=x_train.shape[1:],
-                           tokenizer_index=tokenizer_index,
-                           num_features=len(tokenizer_index) + 1)
-
-    # history_val_acc, history_val_loss = train_ngram_model(train_df, test_df train_df.txt, train_df.is_funny.astype(np.float32), test_df.txt, test_df.is_funny.astype(np.float32))
-    history_val_acc_sepCNN, history_val_loss_sepCNN, model_fit = train_sequence_model(model,
+    model_cnn = sepcnn_model(blocks=3,
+                             filters=32,
+                             kernel_size=3,
+                             embedding_dim=128,
+                             dropout_rate=0.3,
+                             pool_size=2,
+                             input_shape=x_train.shape[1:],
+                             num_features=len(tokenizer_index)+1,
+                             embedding_matrix=embedding_matrix,
+                             use_pretrained_embedding=True,
+                             is_embedding_trainable=True)
+    history_val_acc_cnn, history_val_loss_cnn, model_cnn_fit = train_sequence_model(model_cnn,
                                                                                       x_train,
                                                                                       x_val,
                                                                                       y_train,
@@ -342,9 +319,34 @@ if __name__ == "__main__":
                                                                                       batch_size=200,
                                                                                       epochs=5)
 
-    y_hat_val = model_fit.predict(x_val)
-    compare_models_roc_curve(y_val, [y_hat_val], ['lstm'])
-    plot_confusion_matrix(y_val, [y_hat_val], ['lstm'])
+    y_hat_val_cnn = model_cnn_fit.predict(x_val)
+    compare_models_roc_curve(y_val, [y_hat_val_cnn], ['cnn'])
+    plot_confusion_matrix(y_val, [y_hat_val_cnn], ['cnn'])
+
+    print("finish training LSTM\n\n")
+    from basic_trainers import Model_OneHotEncoding
+
+    model_lstm = LSTM_model(embedding_dim=128,
+                            dropout_rate=0.3,
+                            input_shape=x_train.shape[1:],
+                            tokenizer_index=tokenizer_index,
+                            num_features=len(tokenizer_index) + 1,
+                            embedding_matrix=embedding_matrix,
+                            use_pretrained_embedding=True,
+                            is_embedding_trainable=True)
+
+    # history_val_acc, history_val_loss = train_ngram_model(train_df, test_df train_df.txt, train_df.is_funny.astype(np.float32), test_df.txt, test_df.is_funny.astype(np.float32))
+    history_val_acc_lstm, history_val_loss_lstm, model_lstm_fit = train_sequence_model(model_lstm,
+                                                                                      x_train,
+                                                                                      x_val,
+                                                                                      y_train,
+                                                                                      y_val,
+                                                                                      batch_size=200,
+                                                                                      epochs=5)
+
+    y_hat_val_lstm = model_lstm_fit.predict(x_val)
+    compare_models_roc_curve(y_val, [y_hat_val_lstm], ['lstm'])
+    plot_confusion_matrix(y_val, [y_hat_val_lstm], ['lstm'])
 
     print("finish training LSTM\n\n")
     from basic_trainers import Model_OneHotEncoding
@@ -352,10 +354,13 @@ if __name__ == "__main__":
     y_hats, labels = Model_OneHotEncoding(df_train, df_test)
 
 
-    y_hats.append(y_hat_val)
-    labels.append('CNN_LSTM')
+    y_hats.append(y_hat_val_lstm)
+    labels.append('LSTM')
 
+    y_hats.append(y_hat_val_cnn)
+    labels.append('CNN')
     print("finish all training\n\n")
+
     auc = compare_models_roc_curve(y_val, y_hats, labels)
     print(auc)
     plot_confusion_matrix(y_val, y_hats, labels)
