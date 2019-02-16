@@ -128,6 +128,7 @@ def sequence_vectorize(train_texts, val_texts):
     # Fix sequence length to max value. Sequences shorter than the length are
     # padded in the beginning and sequences longer are truncated
     # at the beginning.
+
     x_train = sequence.pad_sequences(x_train, maxlen=max_length)
     x_val = sequence.pad_sequences(x_val, maxlen=max_length)
     return x_train, x_val, tokenizer.word_index
