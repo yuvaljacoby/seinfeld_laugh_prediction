@@ -378,7 +378,7 @@ if __name__ == "__main__":
     show = False
     df = load_corpus()
     df_scene = getSceneData(df)
-    df_train, df_test = split_train_test(df, 0.2)
+    df_train, df_test = split_train_test(df_scene, 0.2)
     additional_features_train = np.zeros((df_train.shape[0], 6))
     additional_features_train[df_train.character == "JERRY", 0] = 1
     additional_features_train[df_train.character == "GEORGE", 1] = 1
@@ -386,6 +386,11 @@ if __name__ == "__main__":
     additional_features_train[df_train.character == "KRAMER", 3] = 1
     additional_features_train[:, 4] = df_train.start
     additional_features_train[:, 5] = df_train.length
+    additional_features_train[:, 6] = df_train.num_words
+    additional_features_train[:, 7] = df_train.length / df_test.num_words
+    additional_features_train[:, 8] = np.mean(df_train.txt, axis=1)
+    additional_features_train[:, 9] = df_train.n_scene_characters
+
 
     additional_features_val = np.zeros((df_test.shape[0], 6))
     additional_features_val[df_test.character == "JERRY", 0] = 1
@@ -394,6 +399,11 @@ if __name__ == "__main__":
     additional_features_val[df_test.character == "KRAMER", 3] = 1
     additional_features_val[:, 4] = df_test.start
     additional_features_val[:, 5] = df_test.length
+    additional_features_val[:, 6] = df_test.num_words
+    additional_features_val[:, 7] = df_test.length / df_test.num_words
+    additional_features_val[:, 8] = np.mean(df_test.txt, axis=1)
+    additional_features_val[:, 9] = df_test.n_scene_characters
+
 
     print("Preparing sequential data")
     tokenizer_index, x_train, x_val, y_train, y_val = get_sequence_data(df_train, df_test)
