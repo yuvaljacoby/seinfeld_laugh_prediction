@@ -5,18 +5,25 @@ from sklearn.metrics import roc_curve, roc_auc_score, confusion_matrix
 
 
 def compare_models_roc_curve(y_true, y_hats, labels, plot=True):
-    '''
+    """
     Prints roc curve to compare multiple models
+
     :param y_true: list of true labels
     :param y_hats: list of models predictions,
         each cell in the list is a list of probabilities with length len(y_true)
     :param labels: list of size len(y_hats) with label for the model
+    :param plot: whether to plot the ROC curve or not (and just return auc).
+
     :return: AUC for each model + print the plot
-    '''
+    """
     auc = {}
+
     for i, y_hat in enumerate(y_hats):
         fpr, tpr, _ = roc_curve(y_true, y_hat)
-        plt.step(fpr, tpr, alpha=0.5, label=labels[i])
+
+        if plot:
+            plt.step(fpr, tpr, alpha=0.5, label=labels[i])
+
         auc[labels[i]] = roc_auc_score(y_true, y_hat)
 
     if plot:
@@ -30,20 +37,22 @@ def compare_models_roc_curve(y_true, y_hats, labels, plot=True):
         plt.ylim([0.0, 1.05])
         plt.xlim([0.0, 1.0])
         plt.show()
-    else:
-        plt.cla()
+
     return auc
 
 
 def calc_best_threshold(y_true, y_hats, labels):
-    '''
-    For each label calculate the threshold when tpr and fpr has the same importance
-    :param y_true: labeld data
+    """
+    For each label calculate the threshold when tpr and fpr has the same importance.
+    i.e. take the threshold that minimizes (TPR + FPR)
+
+    :param y_true: labeled data
     :param y_hats: list of models predictions,
         each cell in the list is a list of probabilities with length len(y_true)
     :param labels: list of size len(y_hats) with label for the model
-    :return: dict, keys are the labels and values the best threshod
-    '''
+
+    :return: dict, keys are the labels and values the best threshold
+    """
     # Convert y_hats to list of lists if it's not already in this format
     if not (isinstance(y_hats, list) or isinstance(y_hats[0], list)):
         y_hats = [y_hats]
@@ -59,20 +68,20 @@ def calc_best_threshold(y_true, y_hats, labels):
 
 
 def plot_confusion_matrix(y_true, y_hats, labels, thresholds=None):
-    '''
-    For each label calculate the threshold when tpr and fpr has the same importance
-    :param y_true: labeld data
+    """
+    For each label calculate the threshold when TPR and FPR has the same importance.
+
+    :param y_true: labeled data
     :param y_hats: list of models predictions,
         each cell in the list is a list of probabilities with length len(y_true)
     :param labels: list of size len(y_hats) with label for the model
-    :param thresholds: dict key is the label value the threshold to discretize y_hat
+    :param thresholds: dict key is the label value the threshold to discretized y_hat
             if none using best
     :return: dict, keys are the labels and values the best threshold
-    '''
+    """
 
     if not thresholds:
         thresholds = calc_best_threshold(y_true, y_hats, labels)
-
 
     fig, axs = plt.subplots(len(y_hats), 1, sharex=True)
     fig.set_figheight(7)
@@ -95,7 +104,6 @@ def plot_confusion_matrix(y_true, y_hats, labels, thresholds=None):
             curent_ax = axs
 
         sns.heatmap(cm, annot=l, fmt="", ax=curent_ax, xticklabels=ticks_labels, yticklabels=ticks_labels)
-
 
         curent_ax .set_title(labels[i])
         # axs[i].set_xlabel('Predicted label')
