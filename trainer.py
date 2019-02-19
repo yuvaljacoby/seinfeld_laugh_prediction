@@ -7,6 +7,7 @@ from tensorflow.python.keras.layers import GlobalAveragePooling1D
 from tensorflow.python.keras.layers import Input
 from tensorflow.python.keras.layers import MaxPooling1D
 from tensorflow.python.keras.layers import SeparableConv1D
+from tensorflow.python.keras.layers import Lambda
 
 from compare_models import *
 from train_utils import *
@@ -185,7 +186,6 @@ def sepcnn_model(blocks,
     return model
 
 
-
 def LSTM_model(embedding_dim,
                dropout_rate,
                input_shape,
@@ -224,7 +224,33 @@ def LSTM_model(embedding_dim,
     state_h = Concatenate()([forward_h, backward_h])
     state_c = Concatenate()([forward_c, backward_c])
 
-    context_vector, attention_weights = Attention(64)(lstm, state_h)
+    def attention_lambda(input_lambda):
+        lstm_out = input_lambda[0]
+        state = input_lambda[1]
+        W1 = tf.keras.layers.Dense(64)
+        W2 = tf.keras.layers.Dense(64)
+        V = tf.keras.layers.Dense(1)
+
+        hidden_with_time_axis = tf.keras.backend.expand_dims(state, 1)
+        score = tf.keras.backend.tanh(W1(lstm_out) + W2(hidden_with_time_axis))
+        attention_weights = tf.keras.layers.Softmax(axis=1)(V(score))
+        context_vector = attention_weights * lstm_out
+        context_vector = tf.keras.backend.sum(context_vector, axis=1)
+        return context_vector, attention_weights
+
+    context_vector, attention_weights = Lambda(attention_lambda)([lstm, state_h])
+
+    # W1 = tf.keras.layers.Dense(64)
+    # W2 = tf.keras.layers.Dense(64)
+    # V = tf.keras.layers.Dense(1)
+    #
+    # hidden_with_time_axis = tf.keras.backend.expand_dims(state_h, 1)
+    # score = tf.keras.backend.tanh(W1(lstm) + W2(hidden_with_time_axis))
+    # attention_weights = tf.keras.layers.Softmax(axis=1)(V(score))
+    # context_vector = attention_weights * lstm
+    # context_vector = tf.keras.backend.sum(context_vector, axis=1)
+
+    # context_vector, attention_weights = Attention(64)(lstm, state_h)
 
     lstm_pred = tf.keras.layers.Dense(1, activation='sigmoid')(context_vector)
 
