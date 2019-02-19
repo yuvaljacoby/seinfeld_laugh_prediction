@@ -388,10 +388,11 @@ if __name__ == "__main__":
     additional_features_train[:, 4] = df_train.start
     additional_features_train[:, 5] = df_train.length
     additional_features_train[:, 6] = df_train.num_words
-    additional_features_train[:, 7] = df_train.length / df_test.num_words
+    additional_features_train[:, 7] = df_train.length / df_train.num_words
     additional_features_train[:, 8] = df_train.avg_word_length
     additional_features_train[:, 9] = df_train.n_scene_characters
 
+    print(df.num_words.describe())
 
     additional_features_val = np.zeros((df_test.shape[0], num_ftrs))
     additional_features_val[df_test.character == "JERRY", 0] = 1
