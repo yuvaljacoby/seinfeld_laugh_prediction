@@ -146,14 +146,12 @@ def sepcnn_model(blocks,
                                   bias_initializer='random_uniform',
                                   depthwise_initializer='random_uniform',
                                   padding='same')(dropout)
-        print(conv1.shape)
         conv2 = SeparableConv1D(filters=filters,
                                   kernel_size=kernel_size,
                                   activation='relu',
                                   bias_initializer='random_uniform',
                                   depthwise_initializer='random_uniform',
                                   padding='same')(conv1)
-        print(conv2.shape)
         max_pool = MaxPooling1D(pool_size=pool_size)(conv2)
 
         return max_pool
@@ -355,6 +353,7 @@ if __name__ == "__main__":
     df = load_corpus()
     df_scene = getSceneData(df)
     df_train, df_test = split_train_test(df, 0.2)
+    df_train = df_train.sample(frac=0.1)
     additional_features_train = np.zeros((df_train.shape[0], 6))
     additional_features_train[df_train.character == "JERRY", 0] = 1
     additional_features_train[df_train.character == "GEORGE", 1] = 1
@@ -402,11 +401,14 @@ if __name__ == "__main__":
                                                                                     additional_features_train=additional_features_train,
                                                                                     additional_features_val=additional_features_val)
     print("Finish training cnn model")
+
+    tf.keras.models.save_model(model_cnn_fit, './cnn_model.hdf5', overwrite=True, include_optimizer=True)
+
     if use_chars_CNN:
         y_hat_val_cnn = model_cnn_fit.predict([x_val,additional_features_val])
     else:
         y_hat_val_cnn = model_cnn_fit.predict(x_val)
-    compare_models_roc_curve(y_val, [y_hat_val_cnn], ['CNN'], show)
+    compare_models_roc_curve(y_val, [y_hat_val_cnn], ['CNN'], True)
     if show:
         plot_confusion_matrix(y_val, [y_hat_val_cnn], ['CNN'])
 
@@ -433,6 +435,7 @@ if __name__ == "__main__":
                                                                                        epochs=10,
                                                                                        multiple_outputs=True)
 
+    tf.keras.models.save_model(model_lstm_fit, './lstm_model.hdf5', overwrite=True, include_optimizer=True)
     y_hat_val_lstm = model_lstm_fit.predict([x_val, additional_features_val])[0]
     compare_models_roc_curve(y_val, [y_hat_val_lstm], ['lstm'], show)
     if show:
@@ -462,6 +465,7 @@ if __name__ == "__main__":
                                                                                                                batch_size=32,
                                                                                                                epochs=10,
                                                                                                                multiple_outputs=True)
+    tf.keras.models.save_model(model_lstm_fit,'./lstm_no_char_fit_model.hdf5', overwrite=True, include_optimizer=True)
 
     y_hat_val_lstm_no_char = model_lstm_no_char_fit.predict(x_val)[0]
     compare_models_roc_curve(y_val, [y_hat_val_lstm_no_char], ['lstm_no_char'], show)
