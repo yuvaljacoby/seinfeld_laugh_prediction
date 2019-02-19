@@ -30,6 +30,8 @@ def compare_models_roc_curve(y_true, y_hats, labels, plot=True):
         plt.ylim([0.0, 1.05])
         plt.xlim([0.0, 1.0])
         plt.show()
+    else:
+        plt.cla()
     return auc
 
 
