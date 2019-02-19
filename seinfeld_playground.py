@@ -21,6 +21,7 @@ def load_corpus():
 
     characters = np.array([seinfeld.screenplays[i][j].character for i in np.arange(num_episodes) for j in np.arange(episodes_len[i])])
     txt = np.array([seinfeld.screenplays[i][j].txt for i in np.arange(num_episodes) for j in np.arange(episodes_len[i])])
+    # np.chararray.split(txt, ' ')
     num_words = np.array([len(seinfeld.screenplays[i][j].txt.split()) for i in np.arange(num_episodes) for j in np.arange(episodes_len[i])])
     start = np.array([seinfeld.screenplays[i][j].start for i in np.arange(num_episodes) for j in np.arange(episodes_len[i])])
     end = np.array([seinfeld.screenplays[i][j].end for i in np.arange(num_episodes) for j in np.arange(episodes_len[i])])

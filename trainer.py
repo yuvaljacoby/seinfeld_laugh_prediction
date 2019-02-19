@@ -379,7 +379,8 @@ if __name__ == "__main__":
     df = load_corpus()
     df_scene = getSceneData(df)
     df_train, df_test = split_train_test(df_scene, 0.2)
-    additional_features_train = np.zeros((df_train.shape[0], 6))
+    num_ftrs = 10
+    additional_features_train = np.zeros((df_train.shape[0], num_ftrs))
     additional_features_train[df_train.character == "JERRY", 0] = 1
     additional_features_train[df_train.character == "GEORGE", 1] = 1
     additional_features_train[df_train.character == "ELAINE", 2] = 1
@@ -392,7 +393,7 @@ if __name__ == "__main__":
     additional_features_train[:, 9] = df_train.n_scene_characters
 
 
-    additional_features_val = np.zeros((df_test.shape[0], 6))
+    additional_features_val = np.zeros((df_test.shape[0], num_ftrs))
     additional_features_val[df_test.character == "JERRY", 0] = 1
     additional_features_val[df_test.character == "GEORGE", 1] = 1
     additional_features_val[df_test.character == "ELAINE", 2] = 1
