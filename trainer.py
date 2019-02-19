@@ -408,7 +408,7 @@ if __name__ == "__main__":
         y_hat_val_cnn = model_cnn_fit.predict([x_val,additional_features_val])
     else:
         y_hat_val_cnn = model_cnn_fit.predict(x_val)
-    compare_models_roc_curve(y_val, [y_hat_val_cnn], ['CNN'], True)
+    compare_models_roc_curve(y_val, [y_hat_val_cnn], ['CNN'], show)
     if show:
         plot_confusion_matrix(y_val, [y_hat_val_cnn], ['CNN'])
 
