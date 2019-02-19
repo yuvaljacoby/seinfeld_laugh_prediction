@@ -21,6 +21,14 @@ def load_corpus():
 
     characters = np.array([seinfeld.screenplays[i][j].character for i in np.arange(num_episodes) for j in np.arange(episodes_len[i])])
     txt = np.array([seinfeld.screenplays[i][j].txt for i in np.arange(num_episodes) for j in np.arange(episodes_len[i])])
+    txt_split = np.chararray.split(txt, ' ')
+    avg_word_size = []
+    for sentence_array in txt_split:
+        sum = 0.0
+        for word in sentence_array:
+            sum += len(word)
+        avg_word_size.append(sum / len(sentence_array))
+    avg_word_size = np.array(avg_word_size)
     num_words = np.array([len(seinfeld.screenplays[i][j].txt.split()) for i in np.arange(num_episodes) for j in np.arange(episodes_len[i])])
     start = np.array([seinfeld.screenplays[i][j].start for i in np.arange(num_episodes) for j in np.arange(episodes_len[i])])
     end = np.array([seinfeld.screenplays[i][j].end for i in np.arange(num_episodes) for j in np.arange(episodes_len[i])])
@@ -34,7 +42,8 @@ def load_corpus():
 
     df = pd.DataFrame({'character': characters,
                        'txt': txt,
-                       'num_words': num_words,
+                       'num_words': num_words.astype(np.float),
+                       'avg_word_length': avg_word_size,
                        'start': start.astype(np.float),
                        'end': end.astype(np.float),
                        'length': (end.astype(np.float) - start.astype(np.float)),

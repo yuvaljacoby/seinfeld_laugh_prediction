@@ -4,7 +4,7 @@ import seaborn as sns
 from sklearn.metrics import roc_curve, roc_auc_score, confusion_matrix
 
 
-def compare_models_roc_curve(y_true, y_hats, labels):
+def compare_models_roc_curve(y_true, y_hats, labels, plot=True):
     '''
     Prints roc curve to compare multiple models
     :param y_true: list of true labels
@@ -19,16 +19,19 @@ def compare_models_roc_curve(y_true, y_hats, labels):
         plt.step(fpr, tpr, alpha=0.5, label=labels[i])
         auc[labels[i]] = roc_auc_score(y_true, y_hat)
 
-    y_hat_random = np.random.random(len(y_true))
-    fpr_rand, tpr_rand, _ = roc_curve(y_true, y_hat_random)
-    plt.step(fpr_rand, tpr_rand, color='b', alpha=0.5, label='random')
+    if plot:
+        y_hat_random = np.random.random(len(y_true))
+        fpr_rand, tpr_rand, _ = roc_curve(y_true, y_hat_random)
+        plt.step(fpr_rand, tpr_rand, color='b', alpha=0.5, label='random')
 
-    plt.xlabel('fpr')
-    plt.ylabel('tpr')
-    plt.legend()
-    plt.ylim([0.0, 1.05])
-    plt.xlim([0.0, 1.0])
-    plt.show()
+        plt.xlabel('fpr')
+        plt.ylabel('tpr')
+        plt.legend()
+        plt.ylim([0.0, 1.05])
+        plt.xlim([0.0, 1.0])
+        plt.show()
+    else:
+        plt.cla()
     return auc
 
 
