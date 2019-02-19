@@ -37,17 +37,19 @@ def scene_permutation(df):
     return df.loc[order_idx, :].reset_index()
 
 
-def split_train_test(df, test_ratio=0.2):
+def split_train_test(df, test_ratio=0.2, seed=42):
     '''
     Split data to train and test based on episode --> episodes will be fully in train / test
     Then shuffle the scenes inside each split --> each scene will stay in order (but the scene after can from different time)
     Uses global_episode_num and global_scene_number, start
     :param df: df with features (using global_episode_num)
     :param test_ratio: float [0,1] ratio of samples to keep in test
+    :param seed: int seed for randomness
     :return: df_train, df_test
     '''
 
     df = df.sort_values(by=['global_episode_num', 'global_scene_number', 'start'])
+    np.random.seed(seed=seed)
     test_episode = np.random.choice(df.global_episode_num,
                                     size=int(len(df.global_episode_num.unique()) * test_ratio),
                                     replace=False)

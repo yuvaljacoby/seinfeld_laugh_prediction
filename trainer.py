@@ -353,7 +353,6 @@ if __name__ == "__main__":
     df = load_corpus()
     df_scene = getSceneData(df)
     df_train, df_test = split_train_test(df, 0.2)
-    df_train = df_train.sample(frac=0.1)
     additional_features_train = np.zeros((df_train.shape[0], 6))
     additional_features_train[df_train.character == "JERRY", 0] = 1
     additional_features_train[df_train.character == "GEORGE", 1] = 1
