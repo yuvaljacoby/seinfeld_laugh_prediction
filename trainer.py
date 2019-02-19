@@ -389,7 +389,7 @@ if __name__ == "__main__":
     additional_features_train[:, 5] = df_train.length
     additional_features_train[:, 6] = df_train.num_words
     additional_features_train[:, 7] = df_train.length / df_test.num_words
-    additional_features_train[:, 8] = np.mean(df_train.txt, axis=1)
+    additional_features_train[:, 8] = df_train.avg_word_length
     additional_features_train[:, 9] = df_train.n_scene_characters
 
 
@@ -402,7 +402,7 @@ if __name__ == "__main__":
     additional_features_val[:, 5] = df_test.length
     additional_features_val[:, 6] = df_test.num_words
     additional_features_val[:, 7] = df_test.length / df_test.num_words
-    additional_features_val[:, 8] = np.mean(df_test.txt, axis=1)
+    additional_features_val[:, 8] = df_test.avg_word_length
     additional_features_val[:, 9] = df_test.n_scene_characters
 
 
