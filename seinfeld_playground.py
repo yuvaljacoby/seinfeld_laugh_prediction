@@ -5,8 +5,38 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 from sklearn.preprocessing import Binarizer
 from sklearn.feature_extraction.text import CountVectorizer
-import gensim
+# import gensim
 
+
+def clean_characters(df):
+    max_in_a_row = 10
+    curr_character = df['character'][0]  # The current character speaking.
+    curr_count = 0  # The count for the current character speaking.
+    character_count = list()  # Will containg the rows we will collect...
+
+
+    for i, row in df.iterrows():
+        if curr_character != row['character']:
+            character_count.append({'character': curr_character,
+                                    'count': curr_count,
+                                    'season': row['season'],
+                                    'episode_num': row['episode_num'],
+                                    'last_index': i - 1,
+                                    'start': row['start'],
+                                    'end': row['end'],
+                                    'length': row['length']})
+            curr_character = row['character']
+            curr_count = 1
+        else:
+            curr_count += 1
+
+    repeating_characters = pd.DataFrame(character_count)
+    indices_to_remove = []
+    for _, row in repeating_characters.iterrows():
+        if row['count'] >= max_in_a_row:
+            indices_to_remove += [row['last_index'] - j for j in range(row['count'])]
+
+    return indices_to_remove
 
 def create_index_usingduplicated(df, grouping_cols):
     df.sort_values(grouping_cols, inplace=True)
@@ -57,6 +87,8 @@ def load_corpus():
 
     df = df.sort_values(by=['season', 'episode_num', 'start']).reset_index(drop=True)
 
+    char_idx_remove = clean_characters(df)
+    df.loc[char_idx_remove, ['character']] = np.nan
     df['global_episode_num'] = create_index_usingduplicated(df, ['season', 'episode_num'])
     return df
 
