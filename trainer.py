@@ -8,6 +8,7 @@ from tensorflow.python.keras.layers import Input
 from tensorflow.python.keras.layers import MaxPooling1D
 from tensorflow.python.keras.layers import SeparableConv1D
 from tensorflow.python.keras.layers import Lambda
+from tensorflow.python.keras.layers import TimeDistributed
 
 from compare_models import *
 from train_utils import *
@@ -269,6 +270,118 @@ def LSTM_model(embedding_dim,
     return model
 
 
+def multSentence_CNN_LSTM(blocks,
+                         filters,
+                         kernel_size,
+                         embedding_dim,
+                         dropout_rate,
+                         pool_size,
+                         input_shape,
+                         num_features,
+                         num_additional_features=None,
+                         use_pretrained_embedding=False,
+                         is_embedding_trainable=False,
+                         embedding_matrix=None,
+                         use_additional_features=True):
+    """Creates an instance of a separable CNN model.
+
+    # Arguments
+        blocks: int, number of pairs of sepCNN and pooling blocks in the model.
+        filters: int, output dimension of the layers.
+        kernel_size: int, length of the convolution window.
+        embedding_dim: int, dimension of the embedding vectors.
+        dropout_rate: float, percentage of input to drop at Dropout layers.
+        pool_size: int, factor by which to downscale input at MaxPooling layer.
+        input_shape: tuple, shape of input to the model.
+        num_features: int, number of words (embedding input dimension).
+        use_pretrained_embedding: bool, true if pre-trained embedding is on.
+        is_embedding_trainable: bool, true if embedding layer is trainable.
+        embedding_matrix: dict, dictionary with embedding coefficients.
+
+    # Returns
+        A sepCNN model instance.
+    """
+
+    sequence_input = Input(shape=(input_shape[0], input_shape[1],), dtype='int32')
+
+    # embedded_sequences = tf.keras.layers.Lambda(UniversalEmbedding, output_shape=(512,))(sequence_input)
+    if use_pretrained_embedding is True:
+        embedded_sequences = TimeDistributed(Embedding(num_features, embedding_matrix.shape[1], weights=[embedding_matrix],
+                                                            input_length=input_shape[1], trainable=is_embedding_trainable))(sequence_input)
+    else:
+        embedded_sequences = TimeDistributed(Embedding(num_features, embedding_dim, input_length=input_shape[1]))(sequence_input)
+
+    print(embedded_sequences.shape)
+    def conv_block(input_layer):
+        dropout = Dropout(rate=dropout_rate)(input_layer)
+        conv1 = TimeDistributed(SeparableConv1D(filters=filters,
+                                  kernel_size=kernel_size,
+                                  activation='relu',
+                                  bias_initializer='random_uniform',
+                                  depthwise_initializer='random_uniform',
+                                  padding='same'))(dropout)
+        conv2 = TimeDistributed(SeparableConv1D(filters=filters,
+                                  kernel_size=kernel_size,
+                                  activation='relu',
+                                  bias_initializer='random_uniform',
+                                  depthwise_initializer='random_uniform',
+                                  padding='same'))(conv1)
+        max_pool = TimeDistributed(MaxPooling1D(pool_size=pool_size))(conv2)
+
+        return max_pool
+    conv_blocks = [conv_block(embedded_sequences)]
+    for i in range(blocks - 2):
+        conv_blocks.append(conv_block(conv_blocks[i]))
+
+    conv_a = TimeDistributed(SeparableConv1D(filters=filters * 2,
+                          kernel_size=kernel_size,
+                          activation='relu',
+                          bias_initializer='random_uniform',
+                          depthwise_initializer='random_uniform',
+                          padding='same'))(conv_blocks[-1])
+    conv_b = TimeDistributed(SeparableConv1D(filters=filters * 2,
+                          kernel_size=kernel_size,
+                          activation='relu',
+                          bias_initializer='random_uniform',
+                          depthwise_initializer='random_uniform',
+                          padding='same'))(conv_a)
+    avg_pool = TimeDistributed(GlobalAveragePooling1D())(conv_b)
+    affine1 = TimeDistributed(Dense(64, activation='relu'))(avg_pool)
+
+    lstm = tf.keras.layers.Bidirectional(tf.keras.layers.LSTM
+                                         (128,
+                                          dropout=dropout_rate,
+                                          return_sequences=True,
+                                          return_state=True,
+                                          recurrent_activation='relu',
+                                          recurrent_initializer='glorot_uniform'), name="bi_lstm_0")(affine1)
+
+    lstm, forward_h, forward_c, backward_h, backward_c = tf.keras.layers.Bidirectional(tf.keras.layers.LSTM(128,
+                                                                                                            dropout=dropout_rate,
+                                                                                                            return_sequences=True,
+                                                                                                            return_state=True,
+                                                                                                            recurrent_activation='relu',
+                                                                                                            recurrent_initializer='glorot_uniform'))(lstm)
+
+
+    lstm_pred = TimeDistributed(tf.keras.layers.Dense(1, activation='sigmoid'))(lstm)
+
+    if use_additional_features:
+        # char_one_hot = Input(shape=(num_additional_features,), name='char_num')
+        # x = Concatenate()([context_vector, char_one_hot])
+        # affine1 = tf.keras.layers.Dense(64, activation='relu')(x)
+        pass
+    else:
+        affine1 = TimeDistributed(tf.keras.layers.Dense(64, activation='relu'))(lstm)
+    affine2 = TimeDistributed(tf.keras.layers.Dense(64, activation='relu'))(affine1)
+    output = TimeDistributed(tf.keras.layers.Dense(1, activation='sigmoid', name='final_output'))(affine2)
+    if use_additional_features:
+        # model = tf.keras.Model(inputs=[sequence_input, char_one_hot], outputs=[output, lstm_pred])
+        pass
+    else:
+        model = tf.keras.Model(inputs=sequence_input, outputs=[output, lstm_pred])
+    return model
+
 def train_sequence_model(model, x_train, x_val, y_train, y_val, additional_features_train=None,
                          additional_features_val=None, multiple_outputs=False, batch_size=32, learning_rate=1e-3, epochs=100):
     """Trains n-gram model on the given dataset.
@@ -334,10 +447,16 @@ def train_sequence_model(model, x_train, x_val, y_train, y_val, additional_featu
             return history['val_acc'][-1], history['val_loss'][-1], model
     else:
         if multiple_outputs:
-            print('Validation accuracy: {acc}, loss: {loss}'.format(acc=history['final_output_acc'][-1], loss=history['final_output_loss'][-1]))
-            result = model.evaluate(x_val, [y_val, y_val])
-            print(result)
-            return history['final_output_acc'][-1], history['final_output_loss'][-1], model
+            try:
+                print('Validation accuracy: {acc}, loss: {loss}'.format(acc=history['final_output_acc'][-1], loss=history['final_output_loss'][-1]))
+                result = model.evaluate(x_val, [y_val, y_val])
+                print(result)
+                return history['final_output_acc'][-1], history['final_output_loss'][-1], model
+            except KeyError:
+                print('Validation accuracy: {acc}, loss: {loss}'.format(acc=history['time_distributed_14_acc'][-1], loss=history['time_distributed_14_loss'][-1]))
+                result = model.evaluate(x_val, [y_val, y_val])
+                print(result)
+                return history['time_distributed_14_acc'][-1], history['time_distributed_14_loss'][-1], model
         else:
             print('Validation accuracy: {acc}, loss: {loss}'.format(acc=history['val_acc'][-1], loss=history['val_loss'][-1]))
             result = model.evaluate(x_val, y_val)
@@ -392,8 +511,6 @@ if __name__ == "__main__":
     additional_features_train[:, 8] = df_train.avg_word_length
     additional_features_train[:, 9] = df_train.n_scene_characters
 
-    print(df.num_words.describe())
-
     additional_features_val = np.zeros((df_test.shape[0], num_ftrs))
     additional_features_val[df_test.character == "JERRY", 0] = 1
     additional_features_val[df_test.character == "GEORGE", 1] = 1
@@ -407,12 +524,57 @@ if __name__ == "__main__":
     additional_features_val[:, 9] = df_test.n_scene_characters
 
 
+
     print("Preparing sequential data")
     tokenizer_index, x_train, x_val, y_train, y_val = get_sequence_data(df_train, df_test)
     print("Getting embedding")
     embedding_matrix = get_glove_embedding(len(tokenizer_index) + 1, tokenizer_index)
-    print("Training cnn model")
+    print("Training cnn lstm multi model")
     use_chars_CNN = True
+
+    x_train_multi = np.tile(x_train, 10).reshape((-1,20,10)).transpose((0,2,1))
+    y_train_multi = np.tile(y_train, 10).reshape((-1,1,10)).transpose((0,2,1))
+    x_val_multi = np.tile(x_val, 10).reshape((-1,20,10)).transpose((0,2,1))
+    y_val_multi = np.tile(y_val, 10).reshape((-1,1,10)).transpose((0,2,1))
+
+    model_cnn_lstm_multi = multSentence_CNN_LSTM(blocks=3,
+                                                 filters=32,
+                                                 kernel_size=5,
+                                                 embedding_dim=100,
+                                                 dropout_rate=0.3,
+                                                 pool_size=2,
+                                                 input_shape=x_train_multi.shape[1:],
+                                                 num_features=len(tokenizer_index)+1,
+                                                 embedding_matrix=embedding_matrix,
+                                                 use_pretrained_embedding=True,
+                                                 is_embedding_trainable=True,
+                                                 use_additional_features=False)
+
+    history_val_acc_cnn_lstm_multi, history_val_loss_cnn_lstm_multi, model_cnn_lstm_multi_fit = train_sequence_model(model_cnn_lstm_multi,
+                                                                                                x_train_multi,
+                                                                                                x_val_multi,
+                                                                                                y_train_multi,
+                                                                                                y_val_multi,
+                                                                                                batch_size=32,
+                                                                                                epochs=5,
+                                                                                                multiple_outputs=True)
+
+    print("Finish training cnn lstm multi model")
+
+    tf.keras.models.save_model(model_cnn_lstm_multi_fit, './cnn_lstm_multi_model.hdf5', overwrite=True, include_optimizer=True)
+
+    if False:
+        y_hat_val_cnn_lstm_multi = model_cnn_lstm_multi_fit.predict([x_val_multi, additional_features_val])[0]
+    else:
+        y_hat_val_cnn_lstm_multi = model_cnn_lstm_multi_fit.predict(x_val_multi)[0][:,0]
+    compare_models_roc_curve(y_val, [y_hat_val_cnn_lstm_multi], ['CNN_LSTM_MULTI'], True)
+    if show:
+        plot_confusion_matrix(y_val, [y_hat_val_cnn_lstm_multi], ['CNN_LSTM_MULTI'])
+
+
+    print("Training cnn model")
+
+
     # Create model instance.
     model_cnn = sepcnn_model(blocks=3,
                              filters=32,
