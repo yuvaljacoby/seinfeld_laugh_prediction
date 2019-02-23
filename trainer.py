@@ -48,8 +48,8 @@ if __name__ == "__main__":
         # split the df to train and test (episode is either train or test)
         df_train, df_test = split_train_test(df_scene, 0.2)
         # save the dataframes for later analyzing
-        df_train.to_csv('%s/df_train.csv')
-        df_test.to_csv('%s/df_test.csv')
+        df_train.to_csv('%s/df_train.csv', args.out_path)
+        df_test.to_csv('%s/df_test.csv', args.out_path)
 
     if args.load_models:
         print("Loading models")
