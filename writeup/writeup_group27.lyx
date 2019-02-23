@@ -1,5 +1,5 @@
-#LyX 2.2 created this file. For more info see http://www.lyx.org/
-\lyxformat 508
+#LyX 2.3 created this file. For more info see http://www.lyx.org/
+\lyxformat 544
 \begin_document
 \begin_header
 \save_transient_properties true
@@ -24,6 +24,8 @@ theorems-ams
 \font_osf false
 \font_sf_scale 100 100
 \font_tt_scale 100 100
+\use_microtype false
+\use_dash_ligatures true
 \graphics default
 \default_output_format default
 \output_sync 0
@@ -53,6 +55,7 @@ theorems-ams
 \suppress_date false
 \justification true
 \use_refstyle 1
+\use_minted 0
 \index Index
 \shortcut idx
 \color #008000
@@ -63,7 +66,10 @@ theorems-ams
 \tocdepth 3
 \paragraph_separation indent
 \paragraph_indentation default
-\quotes_language english
+\is_math_indent 0
+\math_numbering_side default
+\quotes_style english
+\dynamic_quotes 0
 \papercolumns 1
 \papersides 1
 \paperpagestyle default
@@ -81,11 +87,12 @@ Can we (artificially) understand Seinfeld's humor?
 \end_layout
 
 \begin_layout Author
-Dan Kufra (dank) [
+Dan Kufra (‫‪30219082-2‬‬, dank) [
 \begin_inset CommandInset href
 LatexCommand href
 target "dan.kufra@mail.huji.ac.il"
 type "mailto:"
+literal "false"
 
 \end_inset
 
@@ -93,11 +100,12 @@ type "mailto:"
 \begin_inset Newline newline
 \end_inset
 
-Yuval Jacoby (yuvalja) [
+Yuval Jacoby (30224707-7, yuvalja) [
 \begin_inset CommandInset href
 LatexCommand href
 target "yuval.jacoby@mail.huji.ac.il"
 type "mailto:"
+literal "false"
 
 \end_inset
 
@@ -110,6 +118,7 @@ Alon Netser (31160253-6, alonnetser) [
 LatexCommand href
 target "alon.netser@mail.huji.ac.il"
 type "mailto:"
+literal "false"
 
 \end_inset
 
@@ -139,6 +148,7 @@ Seinfeld
 LatexCommand href
 name "YouTube"
 target "https://www.youtube.com/watch?v=Qe9YzGYDJk8"
+literal "false"
 
 \end_inset
 
@@ -147,6 +157,7 @@ target "https://www.youtube.com/watch?v=Qe9YzGYDJk8"
 LatexCommand href
 name "YouTube"
 target "https://www.youtube.com/watch?v=XoMx_5KuUkI"
+literal "false"
 
 \end_inset
 
@@ -155,6 +166,7 @@ target "https://www.youtube.com/watch?v=XoMx_5KuUkI"
 LatexCommand href
 name "YouTube"
 target "https://www.youtube.com/watch?v=epmvG3pjpu0"
+literal "false"
 
 \end_inset
 
@@ -171,6 +183,7 @@ Get Out!
 LatexCommand href
 name "YouTube"
 target "https://www.youtube.com/watch?v=JBgcgQD5bJs"
+literal "false"
 
 \end_inset
 
@@ -353,6 +366,7 @@ We downloaded the dataset from
 LatexCommand href
 name "GitHub"
 target "https://github.com/ranyadshalom/seinfeld_laugh_corpus"
+literal "false"
 
 \end_inset
 
@@ -362,6 +376,7 @@ LatexCommand href
 name "Ran Yad Shalom"
 target "ranyadshalom@gmail.com"
 type "mailto:"
+literal "false"
 
 \end_inset
 
@@ -370,6 +385,7 @@ type "mailto:"
 LatexCommand href
 name "Yoav Golberg"
 target "https://www.cs.bgu.ac.il/~yoavg/uni/"
+literal "false"
 
 \end_inset
 
@@ -377,6 +393,7 @@ target "https://www.cs.bgu.ac.il/~yoavg/uni/"
 \begin_inset CommandInset citation
 LatexCommand cite
 key "key-1"
+literal "true"
 
 \end_inset
 
@@ -401,6 +418,7 @@ R.
 \begin_inset CommandInset citation
 LatexCommand cite
 key "key-1"
+literal "true"
 
 \end_inset
 
@@ -408,6 +426,7 @@ key "key-1"
 \begin_inset CommandInset href
 LatexCommand href
 target "opensubtitles.org"
+literal "false"
 
 \end_inset
 
@@ -416,6 +435,7 @@ target "opensubtitles.org"
 LatexCommand href
 name "seinology.com"
 target "http://www.seinology.com/scripts-english.shtml"
+literal "false"
 
 \end_inset
 
@@ -430,6 +450,7 @@ Due to the technic used by
 \begin_inset CommandInset citation
 LatexCommand cite
 key "key-1"
+literal "true"
 
 \end_inset
 
@@ -518,6 +539,7 @@ The timing of the talking are also pretty accurate, and by reading the paper
 \begin_inset CommandInset citation
 LatexCommand cite
 key "key-1"
+literal "true"
 
 \end_inset
 
@@ -687,6 +709,7 @@ TODO
 \begin_inset CommandInset bibitem
 LatexCommand bibitem
 key "key-1"
+literal "true"
 
 \end_inset
 
