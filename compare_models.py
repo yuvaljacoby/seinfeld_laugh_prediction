@@ -111,5 +111,6 @@ def plot_confusion_matrix(y_trues, y_hats, labels, thresholds=None, out_dir='./'
     plt.xlabel('Predicted label')
     # plt.ylabel('True label')
     plt.plot()
-    plt.savefig('%s/figures/confusion_matrix.png'%out_dir)
+    if out_dir != None:
+        plt.savefig('%s/figures/confusion_matrix.png'%out_dir)
     plt.show()
