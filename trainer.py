@@ -55,7 +55,7 @@ if __name__ == "__main__":
         print("Loading models")
         model_cnn_lstm_multi_fit = tf.keras.models.load_model('%s/trained_models/lstm_multi_model.hdf5'%args.out_path)
         model_cnn_fit = tf.keras.models.load_model('%s/trained_models/cnn_model.hdf5'%args.out_path)
-        model_cnn_no_ftrs_fit = tf.keras.models.load_model('./trained_models/cnn_model_no_ftrs.hdf5'%args.out_path)
+        model_cnn_no_ftrs_fit = tf.keras.models.load_model('%s/trained_models/cnn_model_no_ftrs.hdf5'%args.out_path)
         model_lstm_fit = tf.keras.models.load_model('%s/trained_models/lstm_model.hdf5'%args.out_path)
         model_lstm_no_ftrs_fit = tf.keras.models.load_model('%s/trained_models/lstm_model_no_ftrs.hdf5'%args.out_path)
         model_mlp_fit = tf.keras.models.load_model('%s/trained_models/mlp_model.hdf5'%args.out_path)
