@@ -4,7 +4,7 @@ import seaborn as sns
 from sklearn.metrics import roc_curve, roc_auc_score, confusion_matrix
 
 
-def compare_models_roc_curve(y_true, y_hats, labels, plot=True):
+def compare_models_roc_curve(y_trues, y_hats, labels, plot=True, out_dir='./'):
     """
     Prints roc curve to compare multiple models
 
@@ -13,12 +13,11 @@ def compare_models_roc_curve(y_true, y_hats, labels, plot=True):
         each cell in the list is a list of probabilities with length len(y_true)
     :param labels: list of size len(y_hats) with label for the model
     :param plot: whether to plot the ROC curve or not (and just return auc).
-
     :return: AUC for each model + print the plot
     """
     auc = {}
 
-    for i, y_hat in enumerate(y_hats):
+    for i, (y_true, y_hat) in enumerate(zip(y_trues, y_hats)):
         fpr, tpr, _ = roc_curve(y_true, y_hat)
 
         if plot:
@@ -27,8 +26,8 @@ def compare_models_roc_curve(y_true, y_hats, labels, plot=True):
         auc[labels[i]] = roc_auc_score(y_true, y_hat)
 
     if plot:
-        y_hat_random = np.random.random(len(y_true))
-        fpr_rand, tpr_rand, _ = roc_curve(y_true, y_hat_random)
+        y_hat_random = np.random.random(len(y_trues[0]))
+        fpr_rand, tpr_rand, _ = roc_curve(y_trues[0], y_hat_random)
         plt.step(fpr_rand, tpr_rand, color='b', alpha=0.5, label='random')
 
         plt.xlabel('fpr')
@@ -36,12 +35,13 @@ def compare_models_roc_curve(y_true, y_hats, labels, plot=True):
         plt.legend()
         plt.ylim([0.0, 1.05])
         plt.xlim([0.0, 1.0])
+        plt.savefig('%s/figures/roc.png'%out_dir)
         plt.show()
 
     return auc
 
 
-def calc_best_threshold(y_true, y_hats, labels):
+def calc_best_threshold(y_trues, y_hats, labels):
     """
     For each label calculate the threshold when tpr and fpr has the same importance.
     i.e. take the threshold that minimizes (TPR + FPR)
@@ -58,7 +58,7 @@ def calc_best_threshold(y_true, y_hats, labels):
         y_hats = [y_hats]
 
     best_thresholds = {}
-    for i, y_hat in enumerate(y_hats):
+    for i, (y_true, y_hat) in enumerate(zip(y_trues, y_hats)):
         fpr, tpr, thresholds = roc_curve(y_true, y_hat)
         optimal_idx = np.argmax(tpr - fpr)
         optimal_threshold = thresholds[optimal_idx]
@@ -67,7 +67,7 @@ def calc_best_threshold(y_true, y_hats, labels):
     return best_thresholds
 
 
-def plot_confusion_matrix(y_true, y_hats, labels, thresholds=None):
+def plot_confusion_matrix(y_trues, y_hats, labels, thresholds=None, out_dir='./'):
     """
     For each label calculate the threshold when TPR and FPR has the same importance.
 
@@ -81,13 +81,13 @@ def plot_confusion_matrix(y_true, y_hats, labels, thresholds=None):
     """
 
     if not thresholds:
-        thresholds = calc_best_threshold(y_true, y_hats, labels)
+        thresholds = calc_best_threshold(y_trues, y_hats, labels)
 
     fig, axs = plt.subplots(len(y_hats), 1, sharex=True)
     fig.set_figheight(7)
 
     ticks_labels = ['not funny', 'funny']
-    for i, y_hat in enumerate(y_hats):
+    for i, (y_true, y_hat) in enumerate(zip(y_trues, y_hats)):
         y_hat_binary = y_hat >= thresholds[labels[i]]
         cm = confusion_matrix(y_true, y_hat_binary)
         # TODO: Not sure if to divide by axis 0 or 1
@@ -111,4 +111,5 @@ def plot_confusion_matrix(y_true, y_hats, labels, thresholds=None):
     plt.xlabel('Predicted label')
     # plt.ylabel('True label')
     plt.plot()
+    plt.savefig('%s/figures/confusion_matrix.png'%out_dir)
     plt.show()

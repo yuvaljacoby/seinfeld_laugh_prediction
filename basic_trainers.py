@@ -29,7 +29,7 @@ def Model_OneHotEncoding(df_train, df_test):
     # rf.fit(X_train, y_train)
     # y_hat_rf = rf.predict_proba(X_test)
     # return [y_hat_lr[:, 1], y_hat_svm[:, 1], y_hat_rf[:, 1]], ['lr', 'svm', 'rf']
-    return [y_hat_lr[:, 1]], ['lr']
+    return y_hat_lr[:, 1]
 
 def plot_scores(y_test, y_hats, labels):
     # labels = ['lr', 'svm', 'rf']

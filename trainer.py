@@ -1,694 +1,296 @@
-from tensorflow.python.keras import models
-from tensorflow.python.keras.layers import Concatenate
-from tensorflow.python.keras.layers import Dense
-from tensorflow.python.keras.layers import Dropout
-from tensorflow.python.keras.layers import Embedding
-from tensorflow.python.keras.layers import GlobalAveragePooling1D
-from tensorflow.python.keras.layers import Input
-from tensorflow.python.keras.layers import MaxPooling1D
-from tensorflow.python.keras.layers import SeparableConv1D
-from tensorflow.python.keras.layers import Lambda
-from tensorflow.python.keras.layers import TimeDistributed
-
 from compare_models import *
 from train_utils import *
+from models import *
+from trainers import *
 from seinfeld_playground import *
+import os
+import argparse
 
 # module_url = "https://tfhub.dev/google/universal-sentence-encoder-large/3"
 # Import the Universal Sentence Encoder's TF Hub module
 # embed = hub.Module(module_url)
 
-def mlp_model(layers, units, dropout_rate, input_shape):
-    """Creates an instance of a multi-layer perceptron model.
-
-    # Arguments
-        layers: int, number of `Dense` layers in the model.
-        units: int, output dimension of the layers.
-        dropout_rate: float, percentage of input to drop at Dropout layers.
-        input_shape: tuple, shape of input to the model.
-
-    # Returns
-        An MLP model instance.
-    """
-    op_units, op_activation = 1, 'sigmoid'
-    model = models.Sequential()
-    model.add(Dropout(rate=dropout_rate, input_shape=input_shape))
-
-    for _ in range(layers - 1):
-        model.add(Dense(units=units, activation='relu'))
-        model.add(Dropout(rate=dropout_rate))
-
-    model.add(Dense(units=op_units, activation=op_activation))
-    return model
-
-
-def train_ngram_model(train_df, test_df, train_texts, train_labels, val_texts, val_labels, learning_rate=1e-3,
-                      epochs=100,
-                      batch_size=128, layers=2, units=64, dropout_rate=0.2):
-    """Trains n-gram model on the given dataset.
-
-    # Arguments
-        data: tuples of training and test texts and labels.
-        learning_rate: float, learning rate for training model.
-        epochs: int, number of epochs.
-        batch_size: int, number of samples per batch.
-        layers: int, number of `Dense` layers in the model.
-        units: int, output dimension of Dense layers in the model.
-        dropout_rate: float: percentage of input to drop at Dropout layers.
-
-    # Raises
-        ValueError: If validation data has label values which were not seen
-            in the training data.
-    """
-
-    # Verify that validation labels are in the same range as training labels.
-    num_classes = 2
-
-    # Vectorize texts.
-    x_train, x_val = ngram_vectorize(train_texts, train_labels, val_texts)
-
-    # Create model instance.
-    model = mlp_model(layers=layers,
-                      units=units,
-                      dropout_rate=dropout_rate,
-                      input_shape=x_train.shape[1:])
-
-    # Compile model with learning parameters.
-    loss = 'binary_crossentropy'
-
-    optimizer = tf.keras.optimizers.Adam(lr=learning_rate)
-    model.compile(optimizer=optimizer, loss=loss, metrics=['acc'])
-
-    # Create callback for early stopping on validation loss. If the loss does
-    # not decrease in two consecutive tries, stop training.
-    callbacks = [tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=2)]
-
-    # Train and validate model.
-    history = model.fit(x_train, train_labels, epochs=epochs, callbacks=callbacks, validation_data=(x_val, val_labels),
-                        verbose=2, batch_size=batch_size)
-
-    # Print results.
-    history = history.history
-    print('Validation accuracy: {acc}, loss: {loss}'.format(
-        acc=history['val_acc'][-1], loss=history['val_loss'][-1]))
-
-    # Save model.
-    model.save('tfidf_mlp_model.h5')
-    return history['val_acc'][-1], history['val_loss'][-1]
-
-
-def sepcnn_model(blocks,
-                 filters,
-                 kernel_size,
-                 embedding_dim,
-                 dropout_rate,
-                 pool_size,
-                 input_shape,
-                 num_features,
-                 num_additional_features=None,
-                 use_pretrained_embedding=False,
-                 is_embedding_trainable=False,
-                 embedding_matrix=None,
-                 use_additional_features=True):
-    """Creates an instance of a separable CNN model.
-
-    # Arguments
-        blocks: int, number of pairs of sepCNN and pooling blocks in the model.
-        filters: int, output dimension of the layers.
-        kernel_size: int, length of the convolution window.
-        embedding_dim: int, dimension of the embedding vectors.
-        dropout_rate: float, percentage of input to drop at Dropout layers.
-        pool_size: int, factor by which to downscale input at MaxPooling layer.
-        input_shape: tuple, shape of input to the model.
-        num_features: int, number of words (embedding input dimension).
-        use_pretrained_embedding: bool, true if pre-trained embedding is on.
-        is_embedding_trainable: bool, true if embedding layer is trainable.
-        embedding_matrix: dict, dictionary with embedding coefficients.
-
-    # Returns
-        A sepCNN model instance.
-    """
-    op_units, op_activation = 1, 'sigmoid'
-
-    sequence_input = Input(shape=(input_shape[0],), dtype='int32')
-
-    # embedded_sequences = tf.keras.layers.Lambda(UniversalEmbedding, output_shape=(512,))(sequence_input)
-    if use_pretrained_embedding is True:
-        embedded_sequences = Embedding(num_features, embedding_matrix.shape[1], weights=[embedding_matrix],
-                                                       input_length=input_shape[0], trainable=is_embedding_trainable)(sequence_input)
-    else:
-        embedded_sequences = Embedding(num_features, embedding_dim, input_length=input_shape[0])(sequence_input)
-
-    print(embedded_sequences.shape)
-    def conv_block(input_layer):
-        dropout = Dropout(rate=dropout_rate)(input_layer)
-        conv1 = SeparableConv1D(filters=filters,
-                                  kernel_size=kernel_size,
-                                  activation='relu',
-                                  bias_initializer='random_uniform',
-                                  depthwise_initializer='random_uniform',
-                                  padding='same')(dropout)
-        conv2 = SeparableConv1D(filters=filters,
-                                  kernel_size=kernel_size,
-                                  activation='relu',
-                                  bias_initializer='random_uniform',
-                                  depthwise_initializer='random_uniform',
-                                  padding='same')(conv1)
-        max_pool = MaxPooling1D(pool_size=pool_size)(conv2)
-
-        return max_pool
-    conv_blocks = [conv_block(embedded_sequences)]
-    for i in range(blocks - 2):
-        conv_blocks.append(conv_block(conv_blocks[i]))
-
-    conv_a = SeparableConv1D(filters=filters * 2,
-                          kernel_size=kernel_size,
-                          activation='relu',
-                          bias_initializer='random_uniform',
-                          depthwise_initializer='random_uniform',
-                          padding='same')(conv_blocks[-1])
-    conv_b = SeparableConv1D(filters=filters * 2,
-                          kernel_size=kernel_size,
-                          activation='relu',
-                          bias_initializer='random_uniform',
-                          depthwise_initializer='random_uniform',
-                          padding='same')(conv_a)
-    avg_pool = GlobalAveragePooling1D()(conv_b)
-    affine1 = Dense(64, activation='relu')(avg_pool)
-    if use_additional_features:
-        char_one_hot = Input(shape=(num_additional_features,), name='char_num')
-        concat_layer = Concatenate()([affine1, char_one_hot])
-        # affine2 = Dense(op_units, activation='relu')(concat_layer)
-        output_layer = Dense(op_units, activation=op_activation, name='final_output')(concat_layer)
-        model = tf.keras.Model(inputs=[sequence_input, char_one_hot], outputs=output_layer)
-    else:
-        output_layer = Dense(op_units, activation=op_activation)(affine1)
-        model = tf.keras.Model(inputs=sequence_input, outputs=output_layer)
-    return model
-
-
-def LSTM_model(embedding_dim,
-               dropout_rate,
-               input_shape,
-               num_features,
-               num_additional_features=None,
-               use_pretrained_embedding=False,
-               is_embedding_trainable=False,
-               embedding_matrix=None,
-               use_additional_features=True):
-
-    sequence_input = Input(shape=(input_shape[0],), dtype='int32')
-
-    # embedded_sequences = tf.keras.layers.Lambda(UniversalEmbedding, output_shape=(512,))(sequence_input)
-    if use_pretrained_embedding is True:
-        embedded_sequences = Embedding(num_features, embedding_matrix.shape[1], weights=[embedding_matrix],
-                                                       input_length=input_shape[0], trainable=is_embedding_trainable)(sequence_input)
-    else:
-        embedded_sequences = Embedding(num_features, embedding_dim, input_length=input_shape[0])(sequence_input)
-
-
-    lstm = tf.keras.layers.Bidirectional(tf.keras.layers.LSTM
-                                         (128,
-                                          dropout=dropout_rate,
-                                          return_sequences=True,
-                                          return_state=True,
-                                          recurrent_activation='relu',
-                                          recurrent_initializer='glorot_uniform'), name="bi_lstm_0")(embedded_sequences)
-
-    lstm, forward_h, forward_c, backward_h, backward_c = tf.keras.layers.Bidirectional(tf.keras.layers.LSTM(128,
-                                                                                                            dropout=dropout_rate,
-                                                                                                            return_sequences=True,
-                                                                                                            return_state=True,
-                                                                                                            recurrent_activation='relu',
-                                                                                                            recurrent_initializer='glorot_uniform'))(lstm)
-
-    state_h = Concatenate()([forward_h, backward_h])
-    state_c = Concatenate()([forward_c, backward_c])
-
-    def attention_lambda(input_lambda):
-        lstm_out = input_lambda[0]
-        state = input_lambda[1]
-        W1 = tf.keras.layers.Dense(64)
-        W2 = tf.keras.layers.Dense(64)
-        V = tf.keras.layers.Dense(1)
-
-        hidden_with_time_axis = tf.keras.backend.expand_dims(state, 1)
-        score = tf.keras.backend.tanh(W1(lstm_out) + W2(hidden_with_time_axis))
-        attention_weights = tf.keras.layers.Softmax(axis=1)(V(score))
-        context_vector = attention_weights * lstm_out
-        context_vector = tf.keras.backend.sum(context_vector, axis=1)
-        return context_vector, attention_weights
-
-    context_vector, attention_weights = Lambda(attention_lambda)([lstm, state_h])
-
-    # W1 = tf.keras.layers.Dense(64)
-    # W2 = tf.keras.layers.Dense(64)
-    # V = tf.keras.layers.Dense(1)
-    #
-    # hidden_with_time_axis = tf.keras.backend.expand_dims(state_h, 1)
-    # score = tf.keras.backend.tanh(W1(lstm) + W2(hidden_with_time_axis))
-    # attention_weights = tf.keras.layers.Softmax(axis=1)(V(score))
-    # context_vector = attention_weights * lstm
-    # context_vector = tf.keras.backend.sum(context_vector, axis=1)
-
-    # context_vector, attention_weights = Attention(64)(lstm, state_h)
-
-    lstm_pred = tf.keras.layers.Dense(1, activation='sigmoid')(context_vector)
-
-    if use_additional_features:
-        char_one_hot = Input(shape=(num_additional_features,), name='char_num')
-        x = Concatenate()([context_vector, char_one_hot])
-        affine1 = tf.keras.layers.Dense(64, activation='relu')(x)
-    else:
-        affine1 = tf.keras.layers.Dense(64, activation='relu')(context_vector)
-    affine2 = tf.keras.layers.Dense(64, activation='relu')(affine1)
-    output = tf.keras.layers.Dense(1, activation='sigmoid', name='final_output')(affine2)
-    if use_additional_features:
-        model = tf.keras.Model(inputs=[sequence_input, char_one_hot], outputs=[output, lstm_pred])
-    else:
-        model = tf.keras.Model(inputs=sequence_input, outputs=[output, lstm_pred])
-    return model
-
-
-def multSentence_CNN_LSTM(blocks,
-                         filters,
-                         kernel_size,
-                         embedding_dim,
-                         dropout_rate,
-                         pool_size,
-                         input_shape,
-                         num_features,
-                         num_additional_features=None,
-                         use_pretrained_embedding=False,
-                         is_embedding_trainable=False,
-                         embedding_matrix=None,
-                         use_additional_features=True):
-    """Creates an instance of a separable CNN model.
-
-    # Arguments
-        blocks: int, number of pairs of sepCNN and pooling blocks in the model.
-        filters: int, output dimension of the layers.
-        kernel_size: int, length of the convolution window.
-        embedding_dim: int, dimension of the embedding vectors.
-        dropout_rate: float, percentage of input to drop at Dropout layers.
-        pool_size: int, factor by which to downscale input at MaxPooling layer.
-        input_shape: tuple, shape of input to the model.
-        num_features: int, number of words (embedding input dimension).
-        use_pretrained_embedding: bool, true if pre-trained embedding is on.
-        is_embedding_trainable: bool, true if embedding layer is trainable.
-        embedding_matrix: dict, dictionary with embedding coefficients.
-
-    # Returns
-        A sepCNN model instance.
-    """
-
-    sequence_input = Input(shape=(input_shape[0], input_shape[1],), dtype='int32')
-
-    # embedded_sequences = tf.keras.layers.Lambda(UniversalEmbedding, output_shape=(512,))(sequence_input)
-    if use_pretrained_embedding is True:
-        embedded_sequences = TimeDistributed(Embedding(num_features, embedding_matrix.shape[1], weights=[embedding_matrix],
-                                                            input_length=input_shape[1], trainable=is_embedding_trainable))(sequence_input)
-    else:
-        embedded_sequences = TimeDistributed(Embedding(num_features, embedding_dim, input_length=input_shape[1]))(sequence_input)
-
-    print(embedded_sequences.shape)
-    def conv_block(input_layer):
-        dropout = Dropout(rate=dropout_rate)(input_layer)
-        conv1 = TimeDistributed(SeparableConv1D(filters=filters,
-                                  kernel_size=kernel_size,
-                                  activation='relu',
-                                  bias_initializer='random_uniform',
-                                  depthwise_initializer='random_uniform',
-                                  padding='same'))(dropout)
-        conv2 = TimeDistributed(SeparableConv1D(filters=filters,
-                                  kernel_size=kernel_size,
-                                  activation='relu',
-                                  bias_initializer='random_uniform',
-                                  depthwise_initializer='random_uniform',
-                                  padding='same'))(conv1)
-        max_pool = TimeDistributed(MaxPooling1D(pool_size=pool_size))(conv2)
-
-        return max_pool
-    conv_blocks = [conv_block(embedded_sequences)]
-    for i in range(blocks - 2):
-        conv_blocks.append(conv_block(conv_blocks[i]))
-
-    conv_a = TimeDistributed(SeparableConv1D(filters=filters * 2,
-                          kernel_size=kernel_size,
-                          activation='relu',
-                          bias_initializer='random_uniform',
-                          depthwise_initializer='random_uniform',
-                          padding='same'))(conv_blocks[-1])
-    conv_b = TimeDistributed(SeparableConv1D(filters=filters * 2,
-                          kernel_size=kernel_size,
-                          activation='relu',
-                          bias_initializer='random_uniform',
-                          depthwise_initializer='random_uniform',
-                          padding='same'))(conv_a)
-    avg_pool = TimeDistributed(GlobalAveragePooling1D())(conv_b)
-    affine1 = TimeDistributed(Dense(64, activation='relu'))(avg_pool)
-
-    lstm = tf.keras.layers.Bidirectional(tf.keras.layers.LSTM
-                                         (128,
-                                          dropout=dropout_rate,
-                                          return_sequences=True,
-                                          return_state=True,
-                                          recurrent_activation='relu',
-                                          recurrent_initializer='glorot_uniform'), name="bi_lstm_0")(affine1)
-
-    lstm, forward_h, forward_c, backward_h, backward_c = tf.keras.layers.Bidirectional(tf.keras.layers.LSTM(128,
-                                                                                                            dropout=dropout_rate,
-                                                                                                            return_sequences=True,
-                                                                                                            return_state=True,
-                                                                                                            recurrent_activation='relu',
-                                                                                                            recurrent_initializer='glorot_uniform'))(lstm)
-
-
-    lstm_pred = TimeDistributed(tf.keras.layers.Dense(1, activation='sigmoid'))(lstm)
-
-    if use_additional_features:
-        # char_one_hot = Input(shape=(num_additional_features,), name='char_num')
-        # x = Concatenate()([context_vector, char_one_hot])
-        # affine1 = tf.keras.layers.Dense(64, activation='relu')(x)
-        pass
-    else:
-        affine1 = TimeDistributed(tf.keras.layers.Dense(64, activation='relu'))(lstm)
-    affine2 = TimeDistributed(tf.keras.layers.Dense(64, activation='relu'))(affine1)
-    output = TimeDistributed(tf.keras.layers.Dense(1, activation='sigmoid', name='final_output'))(affine2)
-    if use_additional_features:
-        # model = tf.keras.Model(inputs=[sequence_input, char_one_hot], outputs=[output, lstm_pred])
-        pass
-    else:
-        model = tf.keras.Model(inputs=sequence_input, outputs=[output, lstm_pred])
-    return model
-
-def train_sequence_model(model, x_train, x_val, y_train, y_val, additional_features_train=None,
-                         additional_features_val=None, multiple_outputs=False, batch_size=32, learning_rate=1e-3, epochs=100):
-    """Trains n-gram model on the given dataset.
-
-    # Arguments
-        data: tuples of training and test texts and labels.
-        learning_rate: float, learning rate for training model.
-        epochs: int, number of epochs.
-        batch_size: int, number of samples per batch.
-        layers: int, number of `Dense` layers in the model.
-        units: int, output dimension of Dense layers in the model.
-        dropout_rate: float: percentage of input to drop at Dropout layers.
-
-    # Raises
-        ValueError: If validation data has label values which were not seen
-            in the training data.
-    """
-
-    # Compile model with learning parameters.
-    loss = 'binary_crossentropy'
-    # loss = 'mean_squared_error'
-    optimizer = tf.keras.optimizers.Adam(lr=learning_rate)
-    if multiple_outputs:
-        model.compile(optimizer=optimizer, loss=loss, metrics=['acc'], loss_weights=[1, 0.2])
-    else:
-        model.compile(optimizer=optimizer, loss=loss, metrics=['acc'], loss_weights=[1])
-
-    # Create callback for early stopping on validation loss. If the loss does
-    # not decrease in two consecutive tries, stop training.
-    callbacks = [tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=2)]
-
-    # Train and validate model.
-    if additional_features_train is not None:
-        if multiple_outputs:
-            history = model.fit([x_train, additional_features_train], [y_train, y_train], epochs=epochs, callbacks=callbacks,
-                                validation_data=([x_val, additional_features_val], [y_val, y_val]),
-                                verbose=2, batch_size=batch_size)
-        else:
-            history = model.fit([x_train, additional_features_train], y_train, epochs=epochs, callbacks=callbacks,
-                    validation_data=([x_val, additional_features_val], y_val),
-                    verbose=2, batch_size=batch_size)
-    else:
-        if multiple_outputs:
-            history = model.fit(x_train, [y_train, y_train], epochs=epochs, callbacks=callbacks,
-                                validation_data=(x_val, [y_val, y_val]),
-                                verbose=2, batch_size=batch_size)
-        else:
-            history = model.fit(x_train, y_train, epochs=epochs, callbacks=callbacks,
-                                validation_data=(x_val, y_val),
-                                verbose=2, batch_size=batch_size)
-    # Print results.
-    history = history.history
-    if additional_features_train is not None:
-        if multiple_outputs:
-            print('Validation accuracy: {acc}, loss: {loss}'.format(acc=history['final_output_acc'][-1], loss=history['final_output_loss'][-1]))
-            result = model.evaluate([x_val, additional_features_val], [y_val, y_val])
-            print(result)
-            return history['final_output_acc'][-1], history['final_output_loss'][-1], model
-        else:
-            print('Validation accuracy: {acc}, loss: {loss}'.format(acc=history['val_acc'][-1], loss=history['val_loss'][-1]))
-            result = model.evaluate([x_val, additional_features_val], y_val)
-            print(result)
-            return history['val_acc'][-1], history['val_loss'][-1], model
-    else:
-        if multiple_outputs:
-            try:
-                print('Validation accuracy: {acc}, loss: {loss}'.format(acc=history['final_output_acc'][-1], loss=history['final_output_loss'][-1]))
-                result = model.evaluate(x_val, [y_val, y_val])
-                print(result)
-                return history['final_output_acc'][-1], history['final_output_loss'][-1], model
-            except KeyError:
-                print('Validation accuracy: {acc}, loss: {loss}'.format(acc=history['time_distributed_14_acc'][-1], loss=history['time_distributed_14_loss'][-1]))
-                result = model.evaluate(x_val, [y_val, y_val])
-                print(result)
-                return history['time_distributed_14_acc'][-1], history['time_distributed_14_loss'][-1], model
-        else:
-            print('Validation accuracy: {acc}, loss: {loss}'.format(acc=history['val_acc'][-1], loss=history['val_loss'][-1]))
-            result = model.evaluate(x_val, y_val)
-            print(result)
-            return history['val_acc'][-1], history['val_loss'][-1], model
-
-
-def get_sequence_data(df_train, df_test, add_character=False):
-    # split to train and test
-    # train_df = df.sample(frac=0.8, random_state=200)
-    # test_df = df.drop(train_df.index)
-
-    # Vectorize texts.
-    x_train, x_val, tokenizer_index = sequence_vectorize(df_train.txt, df_test.txt)
-    y_train = df_train.is_funny
-    y_val = df_test.is_funny
-
-    if add_character:
-        char_encoding_train = np.zeros(x_train.shape[0])
-        char_encoding_train[df_train.character == 'JERRY'] = len(tokenizer_index) + 1
-        char_encoding_train[df_train.character == 'KRAMER'] = len(tokenizer_index) + 2
-        char_encoding_train[df_train.character == 'GEORGE'] = len(tokenizer_index) + 3
-        char_encoding_train[df_train.character == 'ELAINE'] = len(tokenizer_index) + 4
-        x_train = np.hstack([x_train, char_encoding_train.reshape((-1, 1))])
-
-        char_encoding_test = np.zeros(x_val.shape[0])
-        char_encoding_test[df_test.character == 'JERRY'] = len(tokenizer_index) + 1
-        char_encoding_test[df_test.character == 'KRAMER'] = len(tokenizer_index) + 2
-        char_encoding_test[df_test.character == 'GEORGE'] = len(tokenizer_index) + 3
-        char_encoding_test[df_test.character == 'ELAINE'] = len(tokenizer_index) + 4
-        x_val = np.hstack([x_val, char_encoding_test.reshape((-1, 1))])
-
-    return tokenizer_index, x_train, x_val, y_train, y_val
-
+def parse_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--out_path')
+    parser.add_argument('--train_mlp', default=False, action='store_true')
+    parser.add_argument('--train_CNN', default=False, action='store_true')
+    parser.add_argument('--train_CNN_no_ftrs', default=False, action='store_true')
+    parser.add_argument('--train_LSTM', default=False, action='store_true')
+    parser.add_argument('--train_LSTM_no_ftrs', default=False, action='store_true')
+    parser.add_argument('--train_Multi_LSTM', default=False, action='store_true')
+    parser.add_argument('--load_models', default=False, action='store_true')
+    parser.add_argument('--load_dfs', default=False, action='store_true')
+    parser.add_argument('--run_predict', default=False, action='store_true')
+    parser.add_argument('--plot_results', default=False, action='store_true')
+    parser.add_argument('--save_predict', default=False, action='store_true')
+    return parser.parse_args()
 
 if __name__ == "__main__":
-    # load corpus
-    show = False
-    df = load_corpus()
-    df_scene = getSceneData(df)
-    df_train, df_test = split_train_test(df_scene, 0.2)
-    num_ftrs = 10
-    additional_features_train = np.zeros((df_train.shape[0], num_ftrs))
-    additional_features_train[df_train.character == "JERRY", 0] = 1
-    additional_features_train[df_train.character == "GEORGE", 1] = 1
-    additional_features_train[df_train.character == "ELAINE", 2] = 1
-    additional_features_train[df_train.character == "KRAMER", 3] = 1
-    additional_features_train[:, 4] = df_train.start
-    additional_features_train[:, 5] = df_train.length
-    additional_features_train[:, 6] = df_train.num_words
-    additional_features_train[:, 7] = df_train.length / df_train.num_words
-    additional_features_train[:, 8] = df_train.avg_word_length
-    additional_features_train[:, 9] = df_train.n_scene_characters
 
-    additional_features_val = np.zeros((df_test.shape[0], num_ftrs))
-    additional_features_val[df_test.character == "JERRY", 0] = 1
-    additional_features_val[df_test.character == "GEORGE", 1] = 1
-    additional_features_val[df_test.character == "ELAINE", 2] = 1
-    additional_features_val[df_test.character == "KRAMER", 3] = 1
-    additional_features_val[:, 4] = df_test.start
-    additional_features_val[:, 5] = df_test.length
-    additional_features_val[:, 6] = df_test.num_words
-    additional_features_val[:, 7] = df_test.length / df_test.num_words
-    additional_features_val[:, 8] = df_test.avg_word_length
-    additional_features_val[:, 9] = df_test.n_scene_characters
+    args = parse_args()
+    try:
+        os.mkdir(args.out_path)
+        os.mkdir("%s/figures"%args.out_path)
+        os.mkdir("%s/model_predictions"%args.out_path)
+        os.mkdir("%s/trained_models"%args.out_path)
+    except OSError:
+        print("Output directory already exists")
 
+    if args.load_dfs:
+        df_train = pd.read_csv('%s/df_train.csv'%args.out_path)
+        df_test = pd.read_csv('%s/df_test.csv'%args.out_path)
+    else:
+        # load corpus
+        df = load_corpus()
+        # sort the df by scenes
+        df_scene = getSceneData(df)
+        # split the df to train and test (episode is either train or test)
+        df_train, df_test = split_train_test(df_scene, 0.2)
+        # save the dataframes for later analyzing
+        df_train.to_csv('%s/df_train.csv')
+        df_test.to_csv('%s/df_test.csv')
 
+    if args.load_models:
+        print("Loading models")
+        model_cnn_lstm_multi_fit = tf.keras.models.load_model('%s/trained_models/lstm_multi_model.hdf5'%args.out_path)
+        model_cnn_fit = tf.keras.models.load_model('%s/trained_models/cnn_model.hdf5'%args.out_path)
+        model_cnn_no_ftrs_fit = tf.keras.models.load_model('./trained_models/cnn_model_no_ftrs.hdf5'%args.out_path)
+        model_lstm_fit = tf.keras.models.load_model('%s/trained_models/lstm_model.hdf5'%args.out_path)
+        model_lstm_no_ftrs_fit = tf.keras.models.load_model('%s/trained_models/lstm_model_no_ftrs.hdf5'%args.out_path)
+        model_mlp_fit = tf.keras.models.load_model('%s/trained_models/mlp_model.hdf5'%args.out_path)
+
+    additional_features_train = prepare_additional_ftrs(df_train)
+    additional_features_val = prepare_additional_ftrs(df_test)
 
     print("Preparing sequential data")
+    # prepare the data for sequence embedding
     tokenizer_index, x_train, x_val, y_train, y_val = get_sequence_data(df_train, df_test)
     print("Getting embedding")
+    # load the glove embedding
     embedding_matrix = get_glove_embedding(len(tokenizer_index) + 1, tokenizer_index)
-    print("Training cnn lstm multi model")
-    use_chars_CNN = True
 
-    x_train_multi = np.tile(x_train, 10).reshape((-1,20,10)).transpose((0,2,1))
-    y_train_multi = np.tile(y_train, 10).reshape((-1,1,10)).transpose((0,2,1))
-    x_val_multi = np.tile(x_val, 10).reshape((-1,20,10)).transpose((0,2,1))
-    y_val_multi = np.tile(y_val, 10).reshape((-1,1,10)).transpose((0,2,1))
+    y_s = []
+    y_hats = []
+    labels = []
 
-    model_cnn_lstm_multi = multSentence_CNN_LSTM(blocks=3,
-                                                 filters=32,
-                                                 kernel_size=5,
-                                                 embedding_dim=100,
-                                                 dropout_rate=0.3,
-                                                 pool_size=2,
-                                                 input_shape=x_train_multi.shape[1:],
-                                                 num_features=len(tokenizer_index)+1,
-                                                 embedding_matrix=embedding_matrix,
-                                                 use_pretrained_embedding=True,
-                                                 is_embedding_trainable=True,
-                                                 use_additional_features=False)
+    if args.train_mlp:
+        print("Training MLP model")
+        y_train_mlp = df_train.is_funny.astype(np.float32)
+        y_val_mlp = df_test.is_funny.astype(np.float32)
+        # Vectorize texts.
+        x_train_mlp, x_val_mlp = ngram_vectorize(df_train.txt, y_train, df_test.txt)
+        # Create model instance.
+        mlp_model = mlp_model(input_shape=x_train_mlp.shape[1:])
 
-    history_val_acc_cnn_lstm_multi, history_val_loss_cnn_lstm_multi, model_cnn_lstm_multi_fit = train_sequence_model(model_cnn_lstm_multi,
-                                                                                                x_train_multi,
-                                                                                                x_val_multi,
-                                                                                                y_train_multi,
-                                                                                                y_val_multi,
-                                                                                                batch_size=32,
-                                                                                                epochs=5,
-                                                                                                multiple_outputs=True)
+        history_val_acc_mlp_model, history_val_loss_mlp_model, model_mlp_fit = train_ngram_model(mlp_model, x_train_mlp, y_train_mlp, x_val_mlp, y_val_mlp)
+        print("Finish training mlp model")
 
-    print("Finish training cnn lstm multi model")
+        tf.keras.models.save_model(model_mlp_fit, '%s/trained_models/mlp_model.hdf5'%args.out_path, overwrite=True, include_optimizer=True)
 
-    tf.keras.models.save_model(model_cnn_lstm_multi_fit, './cnn_lstm_multi_model.hdf5', overwrite=True, include_optimizer=True)
+        if args.run_predict:
+            y_hat_val_MLP = model_mlp_fit.predict(x_val_mlp)
+            y_hats.append(y_hat_val_MLP)
+            y_s.append(y_val_mlp)
+            labels.append('MLP')
 
-    if False:
-        y_hat_val_cnn_lstm_multi = model_cnn_lstm_multi_fit.predict([x_val_multi, additional_features_val])[0]
-    else:
-        y_hat_val_cnn_lstm_multi = model_cnn_lstm_multi_fit.predict(x_val_multi)[0][:,0]
-    compare_models_roc_curve(y_val, [y_hat_val_cnn_lstm_multi], ['CNN_LSTM_MULTI'], True)
-    if show:
-        plot_confusion_matrix(y_val, [y_hat_val_cnn_lstm_multi], ['CNN_LSTM_MULTI'])
+    if args.train_Multi_LSTM:
+        print("Training Multi Sentence LSTM model")
+        # prepare data for the multi-sentence model
+        num_sentences = 10
+        x_train_multi, x_val_multi, y_train_multi, y_val_multi, \
+        additional_features_train_multi, additional_features_val_multi = prepare_multi_sentence_data(x_train, x_val, y_train, y_val,
+                                                                                                     additional_features_train, additional_features_val,
+                                                                                                     num_sentences=num_sentences)
+        model_cnn_lstm_multi = multiSentence_CNN_LSTM(blocks=3,
+                                                      filters=32,
+                                                      kernel_size=5,
+                                                      embedding_dim=100,
+                                                      dropout_rate=0.5,
+                                                      pool_size=2,
+                                                      input_shape=x_train_multi.shape[1:],
+                                                      num_features=len(tokenizer_index)+1,
+                                                      embedding_matrix=embedding_matrix,
+                                                      use_pretrained_embedding=True,
+                                                      is_embedding_trainable=True,
+                                                      use_additional_features=True,
+                                                      num_additional_features=additional_features_train.shape[1])
 
+        history_val_acc_cnn_lstm_multi, history_val_loss_cnn_lstm_multi, model_cnn_lstm_multi_fit = train_sequence_model(model_cnn_lstm_multi,
+                                                                                                                         x_train_multi,
+                                                                                                                         x_val_multi,
+                                                                                                                         y_train_multi,
+                                                                                                                         y_val_multi,
+                                                                                                                         batch_size=32,
+                                                                                                                         epochs=10,
+                                                                                                                         learning_rate=0.0001,
+                                                                                                                         multiple_outputs=True,
+                                                                                                                         additional_features_train=additional_features_train_multi,
+                                                                                                                         additional_features_val=additional_features_val_multi)
 
-    print("Training cnn model")
+        print("Finish training cnn lstm multi model")
 
+        tf.keras.models.save_model(model_cnn_lstm_multi_fit, '%s/trained_models/lstm_multi_model.hdf5'%args.out_path, overwrite=True, include_optimizer=True)
+        if args.run_predict:
+            model_cnn_lstm_multi_stateful = multiSentence_CNN_LSTM(blocks=3, filters=32, kernel_size=5, embedding_dim=100, dropout_rate=0.5, pool_size=2, input_shape=(1, 20), num_features=len(tokenizer_index)+1, embedding_matrix=embedding_matrix, use_pretrained_embedding=True, is_embedding_trainable=True, use_additional_features=True, num_additional_features=additional_features_train.shape[1], stateful=True)
+            old_weights = model_cnn_lstm_multi_fit.get_weights()
+            model_cnn_lstm_multi_stateful.set_weights(old_weights)
+            # compile model
+            model_cnn_lstm_multi_stateful.compile(loss='mean_squared_error', optimizer='adam')
+            # y_hat_val_cnn_lstm_multi = model_cnn_lstm_multi_fit.predict([x_val_multi, additional_features_val_multi])[0][:, num_sentences-1]
+            y_hat_val_cnn_lstm_multi = model_cnn_lstm_multi_stateful.predict([np.reshape(x_val, (-1, 1, 20)), np.reshape(additional_features_val, (-1, 1, 9))], batch_size=1)[0][:, 0]
+            y_hats.append(y_hat_val_cnn_lstm_multi)
+            # y_s.append(y_val_multi[:,num_sentences - 1])
+            y_s.append(y_val)
+            labels.append('LSTM_MULTI')
+    if args.train_CNN:
+        print("Training cnn model")
 
-    # Create model instance.
-    model_cnn = sepcnn_model(blocks=3,
-                             filters=32,
-                             kernel_size=5,
-                             embedding_dim=100,
-                             dropout_rate=0.3,
-                             pool_size=2,
-                             input_shape=x_train.shape[1:],
-                             num_features=len(tokenizer_index)+1,
-                             num_additional_features=additional_features_train.shape[1],
-                             embedding_matrix=embedding_matrix,
-                             use_pretrained_embedding=True,
-                             is_embedding_trainable=True,
-                             use_additional_features=use_chars_CNN)
-    history_val_acc_cnn, history_val_loss_cnn, model_cnn_fit = train_sequence_model(model_cnn,
-                                                                                    x_train,
-                                                                                    x_val,
-                                                                                    y_train,
-                                                                                    y_val,
-                                                                                    batch_size=32,
-                                                                                    epochs=10,
-                                                                                    multiple_outputs=False,
-                                                                                    additional_features_train=additional_features_train,
-                                                                                    additional_features_val=additional_features_val)
-    print("Finish training cnn model")
+        # Create model instance.
+        model_cnn = sepcnn_model(blocks=3,
+                                 filters=32,
+                                 kernel_size=5,
+                                 embedding_dim=100,
+                                 dropout_rate=0.3,
+                                 pool_size=2,
+                                 input_shape=x_train.shape[1:],
+                                 num_features=len(tokenizer_index)+1,
+                                 num_additional_features=additional_features_train.shape[1],
+                                 embedding_matrix=embedding_matrix,
+                                 use_pretrained_embedding=True,
+                                 is_embedding_trainable=True,
+                                 use_additional_features=True)
+        history_val_acc_cnn, history_val_loss_cnn, model_cnn_fit = train_sequence_model(model_cnn,
+                                                                                        x_train,
+                                                                                        x_val,
+                                                                                        y_train,
+                                                                                        y_val,
+                                                                                        batch_size=32,
+                                                                                        epochs=5,
+                                                                                        multiple_outputs=False,
+                                                                                        additional_features_train=additional_features_train,
+                                                                                        additional_features_val=additional_features_val)
 
-    tf.keras.models.save_model(model_cnn_fit, './cnn_model.hdf5', overwrite=True, include_optimizer=True)
+        tf.keras.models.save_model(model_cnn_fit, '%s/trained_models/cnn_model.hdf5'%args.out_path, overwrite=True, include_optimizer=True)
+        if args.run_predict:
+            y_hat_val_cnn = model_cnn_fit.predict([x_val,additional_features_val])
+            y_hats.append(y_hat_val_cnn)
+            y_s.append(y_val)
+            labels.append('CNN')
+        print("Finish training cnn model")
 
-    if use_chars_CNN:
-        y_hat_val_cnn = model_cnn_fit.predict([x_val,additional_features_val])
-    else:
-        y_hat_val_cnn = model_cnn_fit.predict(x_val)
-    compare_models_roc_curve(y_val, [y_hat_val_cnn], ['CNN'], show)
-    if show:
-        plot_confusion_matrix(y_val, [y_hat_val_cnn], ['CNN'])
-
-    from basic_trainers import Model_OneHotEncoding
-    print("Training LSTM model")
-    model_lstm = LSTM_model(embedding_dim=100,
-                            dropout_rate=0.3,
-                            input_shape=x_train.shape[1:],
-                            num_features=len(tokenizer_index) + 1,
-                            num_additional_features=additional_features_train.shape[1],
-                            embedding_matrix=embedding_matrix,
-                            use_pretrained_embedding=True,
-                            is_embedding_trainable=True)
-
-    # history_val_acc, history_val_loss = train_ngram_model(train_df, test_df train_df.txt, train_df.is_funny.astype(np.float32), test_df.txt, test_df.is_funny.astype(np.float32))
-    history_val_acc_lstm, history_val_loss_lstm, model_lstm_fit = train_sequence_model(model_lstm,
-                                                                                       x_train,
-                                                                                       x_val,
-                                                                                       y_train,
-                                                                                       y_val,
-                                                                                       additional_features_train=additional_features_train,
-                                                                                       additional_features_val=additional_features_val,
-                                                                                       batch_size=32,
-                                                                                       epochs=10,
-                                                                                       multiple_outputs=True)
-
-    tf.keras.models.save_model(model_lstm_fit, './lstm_model.hdf5', overwrite=True, include_optimizer=True)
-    y_hat_val_lstm = model_lstm_fit.predict([x_val, additional_features_val])[0]
-    compare_models_roc_curve(y_val, [y_hat_val_lstm], ['lstm'], show)
-    if show:
-        plot_confusion_matrix(y_val, [y_hat_val_lstm], ['lstm'])
-
-    print("Finished training LSTM\n\n")
-
-
-    from basic_trainers import Model_OneHotEncoding
-    print("Training LSTM model")
-    model_lstm_no_char = LSTM_model(embedding_dim=100,
-                            dropout_rate=0.3,
-                            input_shape=x_train.shape[1:],
-                            num_features=len(tokenizer_index) + 1,
-                            num_additional_features=additional_features_train.shape[1],
-                            embedding_matrix=embedding_matrix,
-                            use_pretrained_embedding=True,
-                            is_embedding_trainable=True,
-                            use_additional_features=False)
-
-    # history_val_acc, history_val_loss = train_ngram_model(train_df, test_df train_df.txt, train_df.is_funny.astype(np.float32), test_df.txt, test_df.is_funny.astype(np.float32))
-    history_val_acc_lstm_no_char, history_val_loss_lstm_no_char, model_lstm_no_char_fit = train_sequence_model(model_lstm_no_char,
-                                                                                                               x_train,
-                                                                                                               x_val,
-                                                                                                               y_train,
-                                                                                                               y_val,
-                                                                                                               batch_size=32,
-                                                                                                               epochs=10,
-                                                                                                               multiple_outputs=True)
-    tf.keras.models.save_model(model_lstm_fit,'./lstm_no_char_fit_model.hdf5', overwrite=True, include_optimizer=True)
-
-    y_hat_val_lstm_no_char = model_lstm_no_char_fit.predict(x_val)[0]
-    compare_models_roc_curve(y_val, [y_hat_val_lstm_no_char], ['lstm_no_char'], show)
-    if show:
-        plot_confusion_matrix(y_val, [y_hat_val_lstm_no_char], ['lstm_no_char'])
-
-    print("Finished training LSTM no char \n\n")
-
-    from basic_trainers import Model_OneHotEncoding
-
-    y_hats, labels = Model_OneHotEncoding(df_train, df_test)
+    if args.train_CNN_no_ftrs:
+        print("Training cnn no ftrs model")
 
 
-    y_hats.append(y_hat_val_lstm)
-    labels.append('LSTM')
+        # Create model instance.
+        model_cnn_no_ftrs = sepcnn_model(blocks=3,
+                                         filters=32,
+                                         kernel_size=5,
+                                         embedding_dim=100,
+                                         dropout_rate=0.3,
+                                         pool_size=2,
+                                         input_shape=x_train.shape[1:],
+                                         num_features=len(tokenizer_index)+1,
+                                         num_additional_features=additional_features_train.shape[1],
+                                         embedding_matrix=embedding_matrix,
+                                         use_pretrained_embedding=True,
+                                         is_embedding_trainable=True,
+                                         use_additional_features=False)
+        history_val_acc_cnn_no_ftrs, history_val_loss_cnn_no_ftrs, model_cnn_no_ftrs_fit = train_sequence_model(model_cnn_no_ftrs,
+                                                                                                                x_train,
+                                                                                                                x_val,
+                                                                                                                y_train,
+                                                                                                                y_val,
+                                                                                                                batch_size=32,
+                                                                                                                epochs=5,
+                                                                                                                multiple_outputs=False)
+        print("Finish training cnn no ftrs model")
 
-    y_hats.append(y_hat_val_lstm_no_char)
-    labels.append('LSTM_no_char')
+        tf.keras.models.save_model(model_cnn_no_ftrs_fit, '%s/trained_models/cnn_model_no_ftrs.hdf5'%args.out_path, overwrite=True, include_optimizer=True)
+        if args.run_predict:
+            y_hat_val_cnn_no_ftrs = model_cnn_no_ftrs_fit.predict(x_val)
+            y_hats.append(y_hat_val_cnn_no_ftrs)
+            y_s.append(y_val)
+            labels.append('CNN_no_ftrs')
 
-    y_hats.append(y_hat_val_cnn)
-    labels.append('CNN')
+    if args.train_LSTM:
+        print("Training LSTM model")
+        model_lstm = LSTM_model(embedding_dim=100,
+                                dropout_rate=0.3,
+                                input_shape=x_train.shape[1:],
+                                num_features=len(tokenizer_index) + 1,
+                                num_additional_features=additional_features_train.shape[1],
+                                embedding_matrix=embedding_matrix,
+                                use_pretrained_embedding=True,
+                                is_embedding_trainable=True,
+                                use_additional_features=True)
+
+        history_val_acc_lstm, history_val_loss_lstm, model_lstm_fit = train_sequence_model(model_lstm,
+                                                                                           x_train,
+                                                                                           x_val,
+                                                                                           y_train,
+                                                                                           y_val,
+                                                                                           additional_features_train=additional_features_train,
+                                                                                           additional_features_val=additional_features_val,
+                                                                                           batch_size=32,
+                                                                                           epochs=5,
+                                                                                           multiple_outputs=True)
+
+        tf.keras.models.save_model(model_lstm_fit, '%s/trained_models/lstm_model.hdf5'%args.out_path, overwrite=True, include_optimizer=True)
+        if args.run_predict:
+            y_hat_val_lstm = model_lstm_fit.predict([x_val, additional_features_val])[0]
+            y_hats.append(y_hat_val_lstm)
+            y_s.append(y_val)
+            labels.append('LSTM')
+
+        print("Finished training LSTM\n\n")
+
+    if args.train_LSTM_no_ftrs:
+
+        print("Training LSTM no features model")
+        model_lstm_no_ftrs = LSTM_model(embedding_dim=100,
+                                        dropout_rate=0.3,
+                                        input_shape=x_train.shape[1:],
+                                        num_features=len(tokenizer_index) + 1,
+                                        num_additional_features=additional_features_train.shape[1],
+                                        embedding_matrix=embedding_matrix,
+                                        use_pretrained_embedding=True,
+                                        is_embedding_trainable=True,
+                                        use_additional_features=False)
+
+        history_val_acc_lstm_no_ftrs, history_val_loss_lstm_no_ftrs, model_lstm_no_ftrs_fit = train_sequence_model(model_lstm_no_ftrs,
+                                                                                                                   x_train,
+                                                                                                                   x_val,
+                                                                                                                   y_train,
+                                                                                                                   y_val,
+                                                                                                                   batch_size=32,
+                                                                                                                   epochs=5,
+                                                                                                                   multiple_outputs=True)
+        tf.keras.models.save_model(model_lstm_no_ftrs_fit,'%s/trained_models/lstm_no_ftrs_model.hdf5'%args.out_path, overwrite=True, include_optimizer=True)
+        if args.run_predict:
+            y_hat_val_lstm_no_ftrs = model_lstm_no_ftrs_fit.predict(x_val)[0]
+            y_hats.append(y_hat_val_lstm_no_ftrs)
+            labels.append('LSTM_no_ftrs')
+            y_s.append(y_val)
+
+        print("Finished training LSTM no ftrs \n\n")
     print("Finished all training\n\n")
+    if args.run_predict:
+        y_hat_val_logistic_regression = Model_OneHotEncoding(df_train, df_test)
+        y_hats.append(y_hat_val_logistic_regression)
+        labels.append('logistic regression')
+        y_s.append(y_val)
 
-    auc = compare_models_roc_curve(y_val, y_hats, labels)
-    print(auc)
-    plot_confusion_matrix(y_val, y_hats, labels)
 
+    if args.save_predict:
+        for i in np.arange(len(y_hats)):
+            np.savetxt("%s/model_predictions/%s_labels.csv"%(args.out_path, labels[i]), y_s[i], delimiter=",")
+            np.savetxt("%s/model_predictions/%s_predictions.csv"%(args.out_path, labels[i]), y_hats[i], delimiter=",")
+
+    if args.plot_results:
+        auc = compare_models_roc_curve(y_s, y_hats, labels, out_dir=args.out_path)
+        print(auc)
+        plot_confusion_matrix(y_s, y_hats, labels, out_dir=args.out_path)
+
+        # {'lr': 0.5806999794296898, 'LSTM': 0.6437542665548818, 'CNN': 0.6501669147649404, 'LSTM_MULTI': 0.6998002534479721}

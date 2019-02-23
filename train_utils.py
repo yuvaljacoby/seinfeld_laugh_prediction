@@ -1,11 +1,10 @@
 import numpy as np
 
 from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.feature_selection import SelectKBest
+from sklearn.feature_selection import SelectKBest, f_classif
 
 from tensorflow.python.keras.preprocessing import sequence
 from tensorflow.python.keras.preprocessing import text
-import tensorflow as tf
 
 # Vectorization parameters
 # Range (inclusive) of n-gram sizes for tokenizing text.
@@ -58,8 +57,8 @@ def split_train_test(df, test_ratio=0.2, seed=42):
     df_train = df[df.global_episode_num.isin(train_episode)]
     df_test = df[df.global_episode_num.isin(test_episode)]
 
-    df_train = scene_permutation(df_train)
-    df_test = scene_permutation(df_test)
+    # df_train = scene_permutation(df_train)
+    # df_test = scene_permutation(df_test)
     return df_train, df_test
 
 
@@ -156,18 +155,49 @@ def get_glove_embedding(num_features, tokenizer_index):
                 embedding_matrix[i] = embedding_vector
         return embedding_matrix
 
-class Attention(tf.keras.Model):
-    def __init__(self, units):
-        super(Attention, self).__init__()
-        self.W1 = tf.keras.layers.Dense(units)
-        self.W2 = tf.keras.layers.Dense(units)
-        self.V = tf.keras.layers.Dense(1)
 
-    def call(self, features, hidden):
-        hidden_with_time_axis = tf.expand_dims(hidden, 1)
-        score = tf.nn.tanh(self.W1(features) + self.W2(hidden_with_time_axis))
-        attention_weights = tf.nn.softmax(self.V(score), axis=1)
-        context_vector = attention_weights * features
-        context_vector = tf.reduce_sum(context_vector, axis=1)
+def get_sequence_data(df_train, df_test):
+    # Vectorize texts.
+    x_train, x_val, tokenizer_index = sequence_vectorize(df_train.txt, df_test.txt)
+    y_train = df_train.is_funny
+    y_val = df_test.is_funny
+    return tokenizer_index, x_train, x_val, y_train, y_val
 
-        return context_vector, attention_weights
+def prepare_multi_sentence_data(x_train, x_val, y_train, y_val,
+                                additional_ftrs_train, additional_ftrs_val, num_sentences=5):
+
+    x_train_multi = np.zeros((x_train.shape[0] - num_sentences, num_sentences, x_train.shape[1]))
+    x_val_multi = np.zeros((x_val.shape[0] - num_sentences, num_sentences, x_val.shape[1]))
+
+    y_train_multi = np.zeros((x_train.shape[0] - num_sentences, num_sentences, 1))
+    y_val_multi = np.zeros((x_val.shape[0] - num_sentences, num_sentences, 1))
+
+    additional_features_train_multi = np.zeros((additional_ftrs_train.shape[0] - num_sentences, num_sentences, additional_ftrs_train.shape[1]))
+    additional_features_val_multi = np.zeros((additional_ftrs_val.shape[0] - num_sentences, num_sentences, additional_ftrs_val.shape[1]))
+
+    for i in np.arange(x_train.shape[0]-num_sentences):
+        x_train_multi[i] = x_train[i:i+num_sentences]
+        y_train_multi[i] = np.array(y_train[i:i+num_sentences]).reshape((num_sentences,1))
+        additional_features_train_multi[i] = additional_ftrs_train[i:i+num_sentences]
+    for i in np.arange(x_val.shape[0]-num_sentences):
+        x_val_multi[i] = x_val[i:i+num_sentences]
+        y_val_multi[i] = np.array(y_val[i:i+num_sentences]).reshape((num_sentences,1))
+        additional_features_val_multi[i] = additional_ftrs_val[i:i+num_sentences]
+    return x_train_multi, x_val_multi , y_train_multi, y_val_multi, \
+           additional_features_train_multi, additional_features_val_multi
+
+def prepare_additional_ftrs(df):
+    # add additional high level features to be concatted in the model
+    num_ftrs = 9
+    additional_features = np.zeros((df.shape[0], num_ftrs))
+    additional_features[df.character == "JERRY", 0] = 1
+    additional_features[df.character == "GEORGE", 1] = 1
+    additional_features[df.character == "ELAINE", 2] = 1
+    additional_features[df.character == "KRAMER", 3] = 1
+    additional_features[:, 4] = df.start
+    additional_features[:, 5] = df.length
+    additional_features[:, 6] = df.num_words
+    additional_features[:, 7] = df.length / df.num_words
+    additional_features[:, 8] = df.avg_word_length
+    # additional_features[:, 9] = df.n_scene_characters
+    return additional_features

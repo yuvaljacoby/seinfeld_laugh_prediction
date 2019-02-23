@@ -5,7 +5,7 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 from sklearn.preprocessing import Binarizer
 from sklearn.feature_extraction.text import CountVectorizer
-# import gensim
+import gensim
 
 
 def clean_characters(df):
@@ -87,8 +87,8 @@ def load_corpus():
 
     df = df.sort_values(by=['season', 'episode_num', 'start']).reset_index(drop=True)
 
-    char_idx_remove = clean_characters(df)
-    df.loc[char_idx_remove, ['character']] = np.nan
+    # char_idx_remove = clean_characters(df)
+    # df.loc[char_idx_remove, ['character']] = np.nan
     df['global_episode_num'] = create_index_usingduplicated(df, ['season', 'episode_num'])
     return df
 
