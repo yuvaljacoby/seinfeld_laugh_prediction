@@ -196,6 +196,13 @@ The main question we ask is - can we build a model to understand this humor
  like we do?
 \end_layout
 
+\begin_layout Standard
+\begin_inset Newpage newpage
+\end_inset
+
+
+\end_layout
+
 \begin_layout Section
 Problem Descrpition
 \end_layout
@@ -205,22 +212,22 @@ We want to build a model that
 \begin_inset Quotes eld
 \end_inset
 
-understand humor
+understands humor
 \begin_inset Quotes erd
 \end_inset
 
 , i.e.
  given the text of a scene in Seinfeld, will predict funniness for each
- sentences said.
+ sentences.
 \end_layout
 
 \begin_layout Standard
 First, we validate the data.
- We find certain flaws and think about how to deal with them.
+ We find certain flaws and inaccuracies, and think about how to deal with
+ them.
  Second, we analyze the data and visualize its content.
- Last, (just for the fun of it) we visualize the connections between the
- different characters in the show, and build an interactive graph describing
- these relations.
+ Then, we visualize the connections between the different characters in
+ the show, and build an interactive graph describing these relations.
 \end_layout
 
 \begin_layout Subsection
@@ -240,11 +247,10 @@ Funny is not taken only from the text
 \end_layout
 
 \begin_layout Standard
-When we watch Seinfeld and laugh, it is not only from of the text.
- Most of the times it affected from the tone the person was saying that
- sentence, when he emphasized, and more generally the whole scene's video.
- This is the case most of the times in Kramer funny scenes when he enters
- the room demonstratively and 
+When we watch Seinfeld and laugh, it is not only because of the text.
+ Most of the times it is affected from the tone, and more generally the
+ whole scene's video.
+ For example when Kramer enters the room demonstratively 
 \begin_inset Quotes eld
 \end_inset
 
@@ -253,19 +259,7 @@ in a funny way
 \end_inset
 
 .
- These aspects are not always obvious from the text iteself.
-\end_layout
-
-\begin_layout Standard
-Indeed, if you try to read the subtitles for a specific Seinfeld's episode,
- you would not always realize what is so funny.
- 
-\end_layout
-
-\begin_layout Standard
-This leaves us with the question - if we, as human beings, can not always
- realize funniness from the text alone, how can we expect a computer to
- do that?
+ These aspects are not always obvious in the text iteself.
 \end_layout
 
 \begin_layout Subsubsection
@@ -274,35 +268,19 @@ Subjectivity of Funny
 
 \begin_layout Standard
 The laugh-track does not necesarily mean that this is funny.
- After all, Seinfeld is a TV show and the goal of its writers it to profit.
- If you want people to enjoy your show it is essential to encourage them
- to laugh, and this is done by adding the 
-\begin_inset Quotes eld
-\end_inset
-
-laugh-track
-\begin_inset Quotes erd
-\end_inset
-
-.
-\end_layout
-
-\begin_layout Standard
-First of all, this issue is not that severe.
+ However, this issue is not that severe.
  Indeed, the laugh-track does not always indicates funniness, but the writers
- who decided to add the laugh-track at a certain position certainly thought
+ who decided to add the laugh-track at a certain point certainly thought
  that this might be funny.
  Therefore, learning when a laugh-track will occur is also interesting because
- it is the same as given a sentence, predict if some human-being thought
- it might be funny.
+ it is the same as predicting if some human-being thought it might be funny.
 \end_layout
 
 \begin_layout Standard
-Second, the accuracy of the laugh-track is quite good.
- Most of the times there is a laugh-track there is indeed something funny
- going on.
+Second, the accuracy of the laugh-track is quite good - most of the times
+ there is indeed something funny going on.
  Moreover, the coverage of the laugh-track is quite close to 100%, i.e.
- there is (almost) no funny line that is lacking a laugh-track.
+ there are (almost) no funny lines lacking a laugh-track.
 \end_layout
 
 \begin_layout Standard
@@ -310,16 +288,11 @@ Anyway, this issue is the reality and we can not change it.
  Even if we would label the sentences by ourself, it would still mean that
  some human-being (i.e.
  us) is thinking there are funny.
- it does not neccesarily mean that another person will think it's funny.
-\end_layout
-
-\begin_layout Standard
-To conclude, we can be more precise and say that our goal is to predict
- when a sentence is supposed to be funny, as the Seinfeld authors decided.
+ It does not neccesarily mean that another person will think it's funny.
 \end_layout
 
 \begin_layout Subsubsection
-Context
+Context and Timing
 \end_layout
 
 \begin_layout Standard
@@ -329,7 +302,8 @@ The other (many) difficulties ragarding natural-language-processing that
 \end_layout
 
 \begin_layout Standard
-Morever, the context is really important in understanding humor.
+Morever, the context and timing are really important when understanding
+ humor.
  When we watch an episode of Seinfeld we understand the overall topic, and
  remember events that occured previously in the episode (and even in other
  episodes).
@@ -342,7 +316,7 @@ remember
 \begin_inset Quotes erd
 \end_inset
 
- important stuff.
+ important events from the past.
 \end_layout
 
 \begin_layout Section
@@ -355,9 +329,7 @@ Introduction
 
 \begin_layout Standard
 The data we use is basically Seinfeld's subtitles, coupled with the speaking
- character.
- In addition, we have the exact time in which every character's sentence
- begins and ends, and the exact times in which the laughter occured.
+ character and timing - both the the sentences said and the laugh-tracks.
 \end_layout
 
 \begin_layout Standard
@@ -414,15 +386,7 @@ The dataset contains 96 humor annotated “Seinfeld” screenplays, along with
 R.
  Y.
  Shalom and Y.
- Golberg 
-\begin_inset CommandInset citation
-LatexCommand cite
-key "key-1"
-literal "true"
-
-\end_inset
-
- got the subtitles from 
+ Golberg got the subtitles from 
 \begin_inset CommandInset href
 LatexCommand href
 target "opensubtitles.org"
@@ -443,10 +407,7 @@ literal "false"
  Furthermore, they used quite sophisticated techniches to align the subtitles
  with the exact timing, and attach the speaking character for every sentence
  using the scripts.
-\end_layout
-
-\begin_layout Standard
-Due to the technic used by 
+ You can further read about it in 
 \begin_inset CommandInset citation
 LatexCommand cite
 key "key-1"
@@ -454,17 +415,18 @@ literal "true"
 
 \end_inset
 
- to build the data (using the fact that the dialogs were recorded in mono,
- and the laugh-track in stereo) we have the episodes starting at season
- 4 episode 6.
+.
+\end_layout
+
+\begin_layout Standard
+Due to the technic they used to build the data (using the fact that the
+ dialogs were recorded in mono, and the laugh-track in stereo) we have the
+ episodes starting at season 4 episode 6.
  This is because the previous episodes were not recorded this way.
 \end_layout
 
 \begin_layout Standard
-The final dataset contains 96 episodes, with 46,497 sentences in total.
- We took the raw data from the GitHub repository and inserted it into a
- pandas DataFrame, and added several useful attributes.
- Each sentence is associated with several properties:
+There are 46,497 sentences in total, associated with several properties:
 \end_layout
 
 \begin_layout Itemize
@@ -504,6 +466,306 @@ Useful features of the sentence, such as 'num_words', 'length' (in seconds),
  'line_num' (in the episode), 'avg_word_length' (in letters).
 \end_layout
 
+\begin_layout Standard
+For example, here are 3 lines from our dataset (meta-data such as season,
+ episode, etc omitted).
+\end_layout
+
+\begin_layout Standard
+\align center
+\begin_inset Tabular
+<lyxtabular version="3" rows="4" columns="6">
+<features tabularvalignment="middle">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<row>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\series bold
+\size scriptsize
+character
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\series bold
+\size scriptsize
+txt
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\series bold
+\size scriptsize
+start
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\series bold
+\size scriptsize
+end
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\series bold
+\size scriptsize
+is_funny
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\series bold
+\size scriptsize
+laugh_time
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+SUSAN
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+I told you to take the offer.
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+199.003
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+201.469
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+F
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+GEORGE
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+Look, I had nothing to do with this.
+ It wasn't my decision.
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+201.539
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+205.7
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+F
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+GEORGE
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+It was Jerry.
+ Jerry told me.
+  I'm the creative guy.
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+206.044
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+209.341
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+T
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+208.3
+\end_layout
+
+\end_inset
+</cell>
+</row>
+</lyxtabular>
+
+\end_inset
+
+
+\end_layout
+
 \begin_layout Subsection
 Data Validation - no dataset is perfect in our world...
 \end_layout
@@ -515,22 +777,17 @@ nb'.
 \end_layout
 
 \begin_layout Standard
-The first task we addressed was analyzing the dataset and validate it.
+The first task was analyzing the dataset and validate it.
+ We watched several episodes and looked at the dataset at the same time.
 \end_layout
 
 \begin_layout Standard
-We watched several episodes and looked at the dataset at the same time.
-\end_layout
-
-\begin_layout Standard
-We saw that the text is pretty accurate, subject to minor changes the man
- (or machine) who translated it did.
- These changes are not really an influence to our task, because most of
- the time they have the same meaning.
+We saw that the text is pretty accurate, except minor changes the man (or
+ machine) who translated did.
+ These changes are not really an influence to our task.
  For example, "You met her in the supermrket.
  How did you do that?" is shorten to "You met her in the supermrket.
  How?".
- For humor detection, this is not really a severe issue.
 \end_layout
 
 \begin_layout Standard
@@ -559,8 +816,6 @@ The laugh tracks are not perfect.
  Also, the timing of the laughs are not measured perfectly.
  It's quite understandable, because in the show it's also not so obvious
  when the laugh start and when it ends.
- Extracting it automatically by analyzing the audio (like Ran Yad-Shalom
- did) seems pretty challenging.
  However, because most of the time it's actually labels correctly, we treat
  this as acceptable noise in our dataset and continue with our work.
 \end_layout
@@ -570,7 +825,7 @@ The second flaw: the speaking character is sometime mislabeled.
 \end_layout
 
 \begin_layout Standard
-We noticed that the speaking characters sometime is not correct.
+We noticed that the speaking characters sometime isn't correct.
  We found an attribute that might be the cause for mistakes in the speaking
  character labels - one character speaking a lot of sentences in a row.
  It seems that while building the dataset, some characters labels 
@@ -581,8 +836,7 @@ get stuck
 \begin_inset Quotes erd
 \end_inset
 
- and the same character (possibly wrongly) is labeled as the one speaking.
- 
+ on the same character (possibly wrongly).
 \end_layout
 
 \begin_layout Standard
@@ -590,15 +844,12 @@ We found that this is often when some character is speaking more that 10
  sentences in a row.
  Indeed, this is quite rare for the same character to speak more than 10
  sentences in a row.
- There are exceptions of course, for example when a person is talking over
- the phone (and the other side is not heard), or when Jerry is doing his
- stand-up scenes.
+ There are exceptions - for example when a person is talking over the phone,
+ or when Jerry is doing his stand-up scenes.
 \end_layout
 
 \begin_layout Standard
-We tried to capture the mistakes in the talking character by the amount
- of sentences he is saying in a row.
- To do this, we collected all these cases, and analyzed them statistically.
+To do this, we collected all these cases, and analyzed them statistically.
  We saw that the mean sentences-in-a-row is around 1, and that 99% of the
  times it is below 8.
 \end_layout
@@ -606,12 +857,49 @@ We tried to capture the mistakes in the talking character by the amount
 \begin_layout Standard
 Our solution was to mark these speaking characters as 'unknown', but keep
  the other attributes (such as text, duration, funniness, etc).
- Indeed, there is no reason to remove these line from the dataset - most
- of it is correct, the only part that is not correct is the talking character.
- We can still use the funniness and the words in the sentence.
- In models where we take the talking character into account, we need to
- ignore these.
- But in other models - it's perfectly OK.
+\end_layout
+
+\begin_layout Standard
+
+\series bold
+\color red
+DOES IT?
+\end_layout
+
+\begin_layout Standard
+\align center
+\begin_inset Graphics
+	filename repeating_characters_hist.png
+	lyxscale 25
+	scale 25
+
+\end_inset
+
+ 
+\begin_inset Graphics
+	filename repeating_characters_hist_tail.png
+	lyxscale 25
+	scale 25
+
+\end_inset
+
+
+\begin_inset Newline newline
+\end_inset
+
+(Left) Number of sentences in-a-row.
+\begin_inset Newline newline
+\end_inset
+
+(Right) Number of sentences in-a-row, bigger then 10 (the 
+\begin_inset Quotes eld
+\end_inset
+
+tail
+\begin_inset Quotes erd
+\end_inset
+
+).
 \end_layout
 
 \begin_layout Subsection
@@ -629,39 +917,61 @@ We tried to visualize several aspects of the data, in order to get more
  insight about it and get ideas about how to solve it.
 \end_layout
 
-\begin_layout Standard
-First of all, we tried to see if funny sentences are longer (generally speaking).
- We saw that the distributions of the length / #words is different between
- funny and not-funny sentences.
- However, these differences are not so significant, as the standard deviations
- of the length is also pretty high.
- Nevertheless, we can say that the length of the sentence is a features
- that might help in classifing it as funny/not-funny.
- Moreover, we found the the length in seconds and the length in #word behave
- different.
- For example, Elaine's mean #words is quite similar in funny/not-funny sentences
- (about 5.71), but the length in seconds is quite different (2 v.s.
- 2.5).
+\begin_layout Subsubsection
+Finding Meaningful Features for a Sentence
 \end_layout
 
 \begin_layout Standard
-Our conclusions from this visualization is to add more features to the sentence,
- such as #words, length (in seconds), speech-rate (words per second), etc.
- Afterwards, we saw that the results actually improved when we gave them
- these features.
+We wanted to see if there are differences between funny and not-funny sentences
+ in several aspects, such as length (in seconds), number of words in the
+ sentence, speech-rate (words per second), etc.
+ We saw that the distributions of the length / #words is slightly different
+ between funny and not-funny sentences.
+ However, these differences are not significant, as the standard deviations
+ is also pretty high.
+ We found the the length in seconds and the length in #word behave different,
+ and the speech-rate seems also like a good feature (see the figure below).
+\end_layout
+
+\begin_layout Standard
+Our conclusions were to add these features to the sentence.
+ We saw that the results actually improved when we gave them these features.
+\end_layout
+
+\begin_layout Standard
+\align center
+\begin_inset Graphics
+	filename elaine_rate_histograms.png
+	lyxscale 20
+	scale 20
+
+\end_inset
+
+
+\begin_inset Newline newline
+\end_inset
+
+Elaine's speech-rate
+\end_layout
+
+\begin_layout Subsubsection
+Word-Clouds
 \end_layout
 
 \begin_layout Standard
 Another nice visualtions we did was to analyze the speaking characters.
  One thing was to make a word-cloud for each character, as well as to separate
  for funny/not-funny sentences and see if we can see any difference.
- Beside everything, these word-clouds are just fun to look at.
  We can see that there are many common frequent words between funny/not-funny
  sentences.
  However, we can see some interesting issues.
  For example, in Jerry's not-funny sentences the word 'Elaine' is more common.
  Can we learn that when Jerry says 'Elaine' in a sentence it is less likely
  to be funny?
+\end_layout
+
+\begin_layout Subsubsection
+Characters Graph
 \end_layout
 
 \begin_layout Standard
@@ -687,6 +997,171 @@ Experiments
 
 \begin_layout Standard
 TODO
+\end_layout
+
+\begin_layout Section
+Examining the Results
+\end_layout
+
+\begin_layout Remark*
+This section was done in an interactive Jupyter Notebook named 'Analyze_Resulsts.
+ipynb'.
+ You are more than welcome to take a look!
+\end_layout
+
+\begin_layout Standard
+After we finished training the different models we built, we turned to analyze
+ their performance.
+ We looked visually at some of the results, and plotted several measures.
+\end_layout
+
+\begin_layout Standard
+\align center
+\begin_inset Graphics
+	filename ROC_curves.png
+	lyxscale 70
+	scale 70
+
+\end_inset
+
+
+\begin_inset Newline newline
+\end_inset
+
+ROC-curves
+\end_layout
+
+\begin_layout Standard
+We saw that the features we added helped the models greatly.
+ Here are the scores for the CNN and LSTM models, with/without the addional
+ features.
+\end_layout
+
+\begin_layout Standard
+\align center
+\begin_inset Graphics
+	filename CNN_and_LSTM_no_ftrs.png
+	lyxscale 30
+	scale 30
+
+\end_inset
+
+
+\begin_inset Graphics
+	filename CNN_and_LSTM.png
+	lyxscale 30
+	scale 30
+
+\end_inset
+
+
+\begin_inset Newline newline
+\end_inset
+
+Scores with/without the addional features.
+\end_layout
+
+\begin_layout Standard
+Numerically, here are the confusion matrices for the different models:
+\end_layout
+
+\begin_layout Standard
+\align center
+\begin_inset Graphics
+	filename confusion_matrices.png
+	lyxscale 30
+	scale 35
+
+\end_inset
+
+
+\begin_inset Newline newline
+\end_inset
+
+Confusion matrices
+\end_layout
+
+\begin_layout Standard
+It's not perfect, but it definitely learned something.
+ We must remember that our data is quite noisy, so nothing can do it perfectly.
+\end_layout
+
+\begin_layout Standard
+We tried to split to the 4 main characters and see if the performance are
+ different when we look at certain character.
+ We found that there are minor changes, but overall they're all quite the
+ same.
+ You can see for yourself in the notebook.
+\end_layout
+
+\begin_layout Standard
+Furthermore, we wanted to look at some of the results visually.
+\end_layout
+
+\begin_layout Standard
+Here is the most severe false-positive (i.e.
+ the model thought it's funny but it doesn't).
+ We also add some context (5 sentences before the allegedly 'funny' sentence).
+\end_layout
+
+\begin_layout Standard
+\align center
+\begin_inset Graphics
+	filename most_severa_false_positive.png
+	lyxscale 30
+	scale 30
+
+\end_inset
+
+
+\begin_inset Newline newline
+\end_inset
+
+
+\begin_inset Quotes eld
+\end_inset
+
+Severe
+\begin_inset Quotes erd
+\end_inset
+
+ FP
+\end_layout
+
+\begin_layout Standard
+Here are the severe false-negatives (i.e.
+ the model thought it's funny but it doesn't):
+\end_layout
+
+\begin_layout Standard
+\align center
+\begin_inset Graphics
+	filename severe_false_negatives.png
+	lyxscale 30
+	scale 30
+
+\end_inset
+
+
+\begin_inset Newline newline
+\end_inset
+
+
+\begin_inset Quotes eld
+\end_inset
+
+Severe
+\begin_inset Quotes erd
+\end_inset
+
+ FN
+\end_layout
+
+\begin_layout Standard
+These mistakes don't seem that severe.
+ By looking at it (without checking the label) one can think it's label
+ is the opposite.
+ It's shows how difficult this task is.
 \end_layout
 
 \begin_layout Section
