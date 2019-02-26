@@ -35,7 +35,10 @@ def compare_models_roc_curve(y_trues, y_hats, labels, plot=True, out_dir='./'):
         plt.legend()
         plt.ylim([0.0, 1.05])
         plt.xlim([0.0, 1.0])
-        plt.savefig('%s/figures/roc.png'%out_dir)
+
+        if out_dir is not None:
+            plt.savefig('%s/figures/roc.png'%out_dir)
+            
         plt.show()
 
     return auc
