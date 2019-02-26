@@ -135,7 +135,7 @@ LatexCommand tableofcontents
 \end_layout
 
 \begin_layout Abstract
-Who among us isn't familier with the hilarious sitcom 
+Who among us isn't familiar with the hilarious sitcom 
 \begin_inset Quotes eld
 \end_inset
 
@@ -152,7 +152,7 @@ literal "false"
 
 \end_inset
 
-), George Costanza ridiculous behaviour (
+), George Costanza ridiculous behavior (
 \begin_inset CommandInset href
 LatexCommand href
 name "YouTube"
@@ -204,7 +204,7 @@ The main question we ask is - can we build a model to understand this humor
 \end_layout
 
 \begin_layout Section
-Problem Descrpition
+Problem Description
 \end_layout
 
 \begin_layout Standard
@@ -218,7 +218,7 @@ understands humor
 
 , i.e.
  given the text of a scene in Seinfeld, will predict funniness for each
- sentences.
+ sentence.
 \end_layout
 
 \begin_layout Standard
@@ -235,11 +235,65 @@ Difficulties
 \end_layout
 
 \begin_layout Standard
-There are many difficalties regarding this problem.
+The type of problem we are handling is very difficult, we will try to break
+ them into groups:
+\end_layout
+
+\begin_layout Subsubsection
+Computational Humor detector
 \end_layout
 
 \begin_layout Standard
-Here are a few:
+We use humor all the time, but it's still hard to explain why something
+ is funny.
+ Computational understanding of humor is even harder.
+ There are plenty of work in this field for example 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "key-2,key-3,key-6"
+literal "false"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+One of the problems with detecting humor is the subjective of funny i.e.
+ the absence of ground truth.
+\end_layout
+
+\begin_layout Standard
+In this task, we will try to predict Seinfeld writers humor, in this case
+ we do have labels, thought this work we use funny as funny be Seinfeld
+ writers.
+\end_layout
+
+\begin_layout Subsubsection
+Understanding Text
+\end_layout
+
+\begin_layout Standard
+In order to understand humor in text we need to understand the text where
+ we have ambiguity of words, dynamic language etc..
+\end_layout
+
+\begin_layout Standard
+Moreover, the context and timing are really important when understanding
+ humor.
+ When we watch an episode of Seinfeld we understand the overall topic, and
+ remember events that occurred previously in the episode (and even in other
+ episodes).
+ In order to make the computer understand the humor as well, we must use
+ a model that is capable of understanding context and 
+\begin_inset Quotes eld
+\end_inset
+
+remember
+\begin_inset Quotes erd
+\end_inset
+
+ important events from the past.
 \end_layout
 
 \begin_layout Subsubsection
@@ -259,64 +313,27 @@ in a funny way
 \end_inset
 
 .
- These aspects are not always obvious in the text iteself.
-\end_layout
-
-\begin_layout Subsubsection
-Subjectivity of Funny
+ These aspects are not always obvious in the text itself.
 \end_layout
 
 \begin_layout Standard
-The laugh-track does not necesarily mean that this is funny.
- However, this issue is not that severe.
- Indeed, the laugh-track does not always indicates funniness, but the writers
- who decided to add the laugh-track at a certain point certainly thought
- that this might be funny.
- Therefore, learning when a laugh-track will occur is also interesting because
- it is the same as predicting if some human-being thought it might be funny.
-\end_layout
-
-\begin_layout Standard
-Second, the accuracy of the laugh-track is quite good - most of the times
- there is indeed something funny going on.
- Moreover, the coverage of the laugh-track is quite close to 100%, i.e.
- there are (almost) no funny lines lacking a laugh-track.
-\end_layout
-
-\begin_layout Standard
-Anyway, this issue is the reality and we can not change it.
- Even if we would label the sentences by ourself, it would still mean that
- some human-being (i.e.
- us) is thinking there are funny.
- It does not neccesarily mean that another person will think it's funny.
-\end_layout
-
-\begin_layout Subsubsection
-Context and Timing
-\end_layout
-
-\begin_layout Standard
-The other (many) difficulties ragarding natural-language-processing that
- were mentioned in the lecture also affect us (ambiguity, language is not
- static, etc).
-\end_layout
-
-\begin_layout Standard
-Morever, the context and timing are really important when understanding
- humor.
- When we watch an episode of Seinfeld we understand the overall topic, and
- remember events that occured previously in the episode (and even in other
- episodes).
- In order to make the computer understand the humor as well, we must use
- a model that is capable of understanding context and 
+Some works try to predict funninesses in sitcoms, such as 
 \begin_inset Quotes eld
 \end_inset
 
-remember
+The Big Bang Theory
 \begin_inset Quotes erd
 \end_inset
 
- important events from the past.
+ 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "key-4"
+literal "false"
+
+\end_inset
+
+/
 \end_layout
 
 \begin_layout Section
@@ -329,7 +346,7 @@ Introduction
 
 \begin_layout Standard
 The data we use is basically Seinfeld's subtitles, coupled with the speaking
- character and timing - both the the sentences said and the laugh-tracks.
+ character and timing - of the sentences said and the laugh-tracks (if funny).
 \end_layout
 
 \begin_layout Standard
@@ -404,7 +421,7 @@ literal "false"
 \end_inset
 
  and used the audio tracks to extract the exact timing of the laugh-tracks.
- Furthermore, they used quite sophisticated techniches to align the subtitles
+ Furthermore, they used quite sophisticated techniques to align the subtitles
  with the exact timing, and attach the speaking character for every sentence
  using the scripts.
  You can further read about it in 
@@ -419,7 +436,7 @@ literal "true"
 \end_layout
 
 \begin_layout Standard
-Due to the technic they used to build the data (using the fact that the
+Due to the technique they used to build the data (using the fact that the
  dialogs were recorded in mono, and the laugh-track in stereo) we have the
  episodes starting at season 4 episode 6.
  This is because the previous episodes were not recorded this way.
@@ -446,7 +463,7 @@ There are 46,497 sentences in total, associated with several properties:
 \end_layout
 
 \begin_layout Itemize
-'is_funny': Whether a laugh occured after this sentence or not.
+'is_funny': Whether a laugh occurred after this sentence or not.
 \end_layout
 
 \begin_layout Itemize
@@ -502,7 +519,7 @@ character
 
 \series bold
 \size scriptsize
-txt
+text
 \end_layout
 
 \end_inset
@@ -766,6 +783,10 @@ T
 
 \end_layout
 
+\begin_layout Standard
+Out of the 46,497 there are 
+\end_layout
+
 \begin_layout Subsection
 Data Validation - no dataset is perfect in our world...
 \end_layout
@@ -782,11 +803,9 @@ The first task was analyzing the dataset and validate it.
 \end_layout
 
 \begin_layout Standard
-We saw that the text is pretty accurate, except minor changes the man (or
- machine) who translated did.
- These changes are not really an influence to our task.
- For example, "You met her in the supermrket.
- How did you do that?" is shorten to "You met her in the supermrket.
+We saw that the text is pretty accurate, except minor glitches such as,
+ "You met her in the supermarket.
+ How did you do that?" was shorten into "You met her in the supermarket.
  How?".
 \end_layout
 
@@ -803,7 +822,6 @@ literal "true"
  who created this dataset he addressed this issue specifically and payed
  extra attention to take several subtitles and choose the one that is best
  aligned with the audio.
- His job here is pretty impressive.
 \end_layout
 
 \begin_layout Subsubsection
@@ -811,13 +829,13 @@ The first flaw: the laugh-tracks
 \end_layout
 
 \begin_layout Standard
-The laugh tracks are not perfect.
- It's mostly labeled correctly, but there are some false-positives.
- Also, the timing of the laughs are not measured perfectly.
- It's quite understandable, because in the show it's also not so obvious
- when the laugh start and when it ends.
- However, because most of the time it's actually labels correctly, we treat
- this as acceptable noise in our dataset and continue with our work.
+The laugh track is in middle of a sentences and sometimes it is during multiple
+ sentences.
+\end_layout
+
+\begin_layout Standard
+We treat a sentence as funny if there was a laughter during the sentence
+ (sentence start <= laugh time <= sentence end).
 \end_layout
 
 \begin_layout Subsubsection
@@ -825,27 +843,16 @@ The second flaw: the speaking character is sometime mislabeled.
 \end_layout
 
 \begin_layout Standard
-We noticed that the speaking characters sometime isn't correct.
- We found an attribute that might be the cause for mistakes in the speaking
- character labels - one character speaking a lot of sentences in a row.
- It seems that while building the dataset, some characters labels 
-\begin_inset Quotes eld
-\end_inset
-
-get stuck
-\begin_inset Quotes erd
-\end_inset
-
- on the same character (possibly wrongly).
+While visualizing the data we saw a weird phenomenon (fig 1), the histogram
+ of the amount of sentences in a row has a very long tail, with up to 31
+ sentences in a row.
 \end_layout
 
 \begin_layout Standard
-We found that this is often when some character is speaking more that 10
- sentences in a row.
- Indeed, this is quite rare for the same character to speak more than 10
- sentences in a row.
- There are exceptions - for example when a person is talking over the phone,
- or when Jerry is doing his stand-up scenes.
+While there are scenarios where this is possible (phone call where we hear
+ only one said, or a long monologue), we decided to further investigate
+ and watched multiple scenes where this happens, while doing so we did see
+ that in many situations this is a mislabel.
 \end_layout
 
 \begin_layout Standard
@@ -857,13 +864,6 @@ To do this, we collected all these cases, and analyzed them statistically.
 \begin_layout Standard
 Our solution was to mark these speaking characters as 'unknown', but keep
  the other attributes (such as text, duration, funniness, etc).
-\end_layout
-
-\begin_layout Standard
-
-\series bold
-\color red
-DOES IT?
 \end_layout
 
 \begin_layout Standard
@@ -887,7 +887,7 @@ DOES IT?
 \begin_inset Newline newline
 \end_inset
 
-(Left) Number of sentences in-a-row.
+figure 1 - (Left) Number of sentences in-a-row.
 \begin_inset Newline newline
 \end_inset
 
@@ -951,7 +951,7 @@ Our conclusions were to add these features to the sentence.
 \begin_inset Newline newline
 \end_inset
 
-Elaine's speech-rate
+figure 2 - Elaine's speech-rate
 \end_layout
 
 \begin_layout Subsubsection
@@ -959,15 +959,64 @@ Word-Clouds
 \end_layout
 
 \begin_layout Standard
-Another nice visualtions we did was to analyze the speaking characters.
- One thing was to make a word-cloud for each character, as well as to separate
- for funny/not-funny sentences and see if we can see any difference.
- We can see that there are many common frequent words between funny/not-funny
- sentences.
- However, we can see some interesting issues.
- For example, in Jerry's not-funny sentences the word 'Elaine' is more common.
- Can we learn that when Jerry says 'Elaine' in a sentence it is less likely
- to be funny?
+Intuitively each character tend to use different vocabulary, we tried to
+ see if that also holds for funny/not funny sentences.
+\end_layout
+
+\begin_layout Standard
+To do so we removed very English frequent words (using 
+\begin_inset CommandInset href
+LatexCommand href
+name "gensim"
+target "https://radimrehurek.com/gensim/"
+literal "false"
+
+\end_inset
+
+ corpus ).
+\end_layout
+
+\begin_layout Standard
+First we found that the main characters has a variety of words where they
+ all use for example: 
+\shape italic
+yeah, oh.
+\end_layout
+
+\begin_layout Standard
+And also a couple of distinct words such as: Jerry - 
+\shape italic
+car
+\shape default
+, Kramer - 
+\shape italic
+Newman.
+\end_layout
+
+\begin_layout Standard
+Further we wanted to see if characters use different words in funny and
+ non funny sentences.
+\end_layout
+
+\begin_layout Standard
+In order to get significant words, we filtered out words that are common
+ in both types i.e.
+ we used only words that:
+\begin_inset Formula $\frac{\#funny}{\#total}>0.5$
+\end_inset
+
+, in figure-3 we can see Jerry's word clouds, for example when Jerry talks
+ about dating it's usually funny.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Graphics
+	filename Jerry_funny_wordcloud.png
+	scale 50
+
+\end_inset
+
+
 \end_layout
 
 \begin_layout Subsubsection
@@ -988,7 +1037,17 @@ community
 \end_inset
 
  of the 4 main characters (Jerry, George, Kramer and Elaine), as well as
- other secondary characters (such as George parents Monty and Helen).
+ other secondary characters (such as George parents Monty and Helen), this
+ graph is interactive and for full experience please open the notebook.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Graphics
+	filename charcters_connections.png
+
+\end_inset
+
+
 \end_layout
 
 \begin_layout Section
@@ -1033,7 +1092,7 @@ ROC-curves
 
 \begin_layout Standard
 We saw that the features we added helped the models greatly.
- Here are the scores for the CNN and LSTM models, with/without the addional
+ Here are the scores for the CNN and LSTM models, with/without the additional
  features.
 \end_layout
 
@@ -1058,7 +1117,7 @@ We saw that the features we added helped the models greatly.
 \begin_inset Newline newline
 \end_inset
 
-Scores with/without the addional features.
+Scores with/without the additional features.
 \end_layout
 
 \begin_layout Standard
@@ -1188,9 +1247,73 @@ literal "true"
 
 \end_inset
 
- Ran Yad-Shalom and Yoav Goldberg, The Seinfeld Corpus: A Method for Generating
- A Humor Annotated Corpus and An Analysis of That Corpus.
+ R.
+ Yad-Shalom and Y.
+ Goldberg, The Seinfeld Corpus: A Method for Generating A Humor Annotated
+ Corpus and An Analysis of That Corpus.
  Computer Science Department, Bar-Ilan University, Israel, 2017.
+\end_layout
+
+\begin_layout Bibliography
+\begin_inset CommandInset bibitem
+LatexCommand bibitem
+key "key-2"
+literal "false"
+
+\end_inset
+
+R.
+ Mihalcea and S.
+ Pulman.
+ Characterizing humour: An exploration of features in humorous texts.
+ In Computational Linguistics and Intelligent Text Processing, pages 337–347.
+ Springer, 2007
+\end_layout
+
+\begin_layout Bibliography
+\begin_inset CommandInset bibitem
+LatexCommand bibitem
+key "key-3"
+literal "false"
+
+\end_inset
+
+ D.
+ Shahaf, E.
+ Horvitz, and R.
+ Mankoff.
+ Inside jokes: Identifying humorous cartoon captions.
+ In SIGKDD International Conference on Knowledge Discovery and Data Mining,
+ 2015.
+\end_layout
+
+\begin_layout Bibliography
+\begin_inset CommandInset bibitem
+LatexCommand bibitem
+key "key-4"
+literal "false"
+
+\end_inset
+
+ Bertero, D., Fung, P.: A long short-term memory framework for predicting
+ humor in dialogues.
+ In: Proceedings of the 2016 Conference of the North American Chapter of
+ the Association for Computational Linguistics: Human Language Technologies
+ (2016)
+\end_layout
+
+\begin_layout Bibliography
+\begin_inset CommandInset bibitem
+LatexCommand bibitem
+key "key-6"
+
+\end_inset
+
+Aditya Joshi, Vaibhav Tripathi, Kevin Patel, Pushpak Bhattacharyya, and
+ Mark Carman.
+ 2016.
+ Are word embedding-based features useful for sarcasm detection? In Conference
+ on Empirical Methods in Natural Language Processing (EMNLP)
 \end_layout
 
 \end_body
