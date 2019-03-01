@@ -1180,7 +1180,7 @@ Given a sentence each word is put through a Glove embedding layer to a dimension
 We also added another output directly after the attention mechanism (before
  the concatenation with high level features) in order to ensure the loss
  propogates in some way back to the LSTM cells.
- Our final loss is a weighted loss of these two outputs.
+ Our final loss is a weighted binary cross-entropy loss of these two outputs.
 \end_layout
 
 \begin_layout Standard
@@ -1208,7 +1208,8 @@ Seperable 1D Convolution
 \begin_layout Standard
 Then a 1 dimensional Average Pooling layer and a Fully Connected layer.
  Then depending on the experiment, a concatenation of the high level features
- and another Fully Connected layer.
+ and another Fully Connected layer for the output.
+ We then apply a binary cross-entropy loss on the two outputs.
 \end_layout
 
 \begin_layout Standard
@@ -1236,7 +1237,8 @@ funniness
 \begin_inset Quotes erd
 \end_inset
 
- per sentence.
+ per sentence and applying a weighted binary cross-entropy loss on the two
+ outputs.
 \end_layout
 
 \begin_layout Standard
