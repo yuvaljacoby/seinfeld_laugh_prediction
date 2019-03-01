@@ -94,7 +94,6 @@ def sepcnn_model(blocks,
     else:
         embedded_sequences = Embedding(num_features, embedding_dim, input_length=input_shape[0])(sequence_input)
 
-    print(embedded_sequences.shape)
     def conv_block(input_layer):
         dropout = Dropout(rate=dropout_rate)(input_layer)
         conv1 = SeparableConv1D(filters=filters,
@@ -116,19 +115,8 @@ def sepcnn_model(blocks,
     for i in range(blocks - 2):
         conv_blocks.append(conv_block(conv_blocks[i]))
 
-    conv_a = SeparableConv1D(filters=filters * 2,
-                          kernel_size=kernel_size,
-                          activation='relu',
-                          bias_initializer='random_uniform',
-                          depthwise_initializer='random_uniform',
-                          padding='same')(conv_blocks[-1])
-    conv_b = SeparableConv1D(filters=filters * 2,
-                          kernel_size=kernel_size,
-                          activation='relu',
-                          bias_initializer='random_uniform',
-                          depthwise_initializer='random_uniform',
-                          padding='same')(conv_a)
-    avg_pool = GlobalAveragePooling1D()(conv_b)
+    avg_pool = GlobalAveragePooling1D()(conv_blocks[-1])
+
     affine1 = Dense(64, activation='relu')(avg_pool)
     if use_additional_features:
         additional_features = Input(shape=(num_additional_features,), name='char_num')
@@ -316,25 +304,6 @@ def multiSentence_CNN_LSTM(blocks,
     lstm_pred = TimeDistributed(tf.keras.layers.Dense(1, activation='sigmoid'))(lstm)
 
     if use_additional_features:
-        # state_c = TimeDistributed(Concatenate())([forward_c, backward_c])
-        # state_h = TimeDistributed(Concatenate())([forward_h, backward_h])
-        # state_c = Concatenate()([forward_c, backward_c])
-        # state_h = Concatenate()([forward_h, backward_h])
-        # def attention_lambda(input_lambda):
-        #     lstm_out = input_lambda[0]
-        #     state = input_lambda[1]
-        #     W1 = tf.keras.layers.Dense(64)
-        #     W2 = tf.keras.layers.Dense(64)
-        #     V = tf.keras.layers.Dense(1)
-        #
-        #     hidden_with_time_axis = tf.keras.backend.expand_dims(state, 1)
-        #     score = tf.keras.backend.tanh(W1(lstm_out) + W2(hidden_with_time_axis))
-        #     attention_weights = tf.keras.layers.Softmax(axis=1)(V(score))
-        #     context_vector = attention_weights * lstm_out
-        #     context_vector = tf.keras.backend.sum(context_vector, axis=1)
-        #     return context_vector, attention_weights
-        #
-        # context_vector, attention_weights = Lambda(attention_lambda)([lstm, state_h])
         if stateful:
             additional_features = Input(shape=(input_shape[0], num_additional_features,), batch_size=1, name='additional_features')
         else:

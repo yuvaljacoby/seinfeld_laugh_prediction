@@ -88,10 +88,12 @@ if __name__ == "__main__":
         y_val_mlp = df_test.is_funny.astype(np.float32)
         # Vectorize texts.
         x_train_mlp, x_val_mlp = ngram_vectorize(df_train.txt, y_train, df_test.txt)
+        from scipy import sparse
+        x_train_mlp = sparse.hstack((x_train_mlp, sparse.csr_matrix(additional_features_train))).A
+        x_val_mlp = sparse.hstack((x_val_mlp, sparse.csr_matrix(additional_features_val))).A
         if not args.load_models:
             # Create model instance.
             mlp_model = mlp_model(input_shape=x_train_mlp.shape[1:])
-
             history_val_acc_mlp_model, history_val_loss_mlp_model, model_mlp_fit = train_ngram_model(mlp_model, x_train_mlp, y_train_mlp, x_val_mlp, y_val_mlp)
             print("Finish training mlp model")
 
@@ -116,7 +118,7 @@ if __name__ == "__main__":
                                                           filters=32,
                                                           kernel_size=5,
                                                           embedding_dim=100,
-                                                          dropout_rate=0.5,
+                                                          dropout_rate=0.3,
                                                           pool_size=2,
                                                           input_shape=x_train_multi.shape[1:],
                                                           num_features=len(tokenizer_index)+1,
@@ -142,13 +144,13 @@ if __name__ == "__main__":
 
             tf.keras.models.save_model(model_cnn_lstm_multi_fit, '%s/trained_models/lstm_multi_model.hdf5'%args.out_path, overwrite=True, include_optimizer=True)
         if args.run_predict:
-            model_cnn_lstm_multi_stateful = multiSentence_CNN_LSTM(blocks=3, filters=32, kernel_size=5, embedding_dim=100, dropout_rate=0.5, pool_size=2, input_shape=(1, 20), num_features=len(tokenizer_index)+1, embedding_matrix=embedding_matrix, use_pretrained_embedding=True, is_embedding_trainable=True, use_additional_features=True, num_additional_features=additional_features_train.shape[1], stateful=True)
+            model_cnn_lstm_multi_stateful = multiSentence_CNN_LSTM(blocks=3, filters=32, kernel_size=5, embedding_dim=100, dropout_rate=0.5, pool_size=2, input_shape=(1, MAX_SEQUENCE_LENGTH), num_features=len(tokenizer_index)+1, embedding_matrix=embedding_matrix, use_pretrained_embedding=True, is_embedding_trainable=True, use_additional_features=True, num_additional_features=additional_features_train.shape[1], stateful=True)
             old_weights = model_cnn_lstm_multi_fit.get_weights()
             model_cnn_lstm_multi_stateful.set_weights(old_weights)
             # compile model
             model_cnn_lstm_multi_stateful.compile(loss='mean_squared_error', optimizer='adam')
             # y_hat_val_cnn_lstm_multi = model_cnn_lstm_multi_fit.predict([x_val_multi, additional_features_val_multi])[0][:, num_sentences-1]
-            y_hat_val_cnn_lstm_multi = model_cnn_lstm_multi_stateful.predict([np.reshape(x_val, (-1, 1, 20)), np.reshape(additional_features_val, (-1, 1, 9))], batch_size=1)[0][:, 0]
+            y_hat_val_cnn_lstm_multi = model_cnn_lstm_multi_stateful.predict([np.reshape(x_val, (-1, 1, MAX_SEQUENCE_LENGTH)), np.reshape(additional_features_val, (-1, 1, 14))], batch_size=1)[0][:, 0]
             y_hats.append(y_hat_val_cnn_lstm_multi)
             # y_s.append(y_val_multi[:,num_sentences - 1])
             y_s.append(y_val)
@@ -161,7 +163,7 @@ if __name__ == "__main__":
                                      filters=32,
                                      kernel_size=5,
                                      embedding_dim=100,
-                                     dropout_rate=0.3,
+                                     dropout_rate=0.5,
                                      pool_size=2,
                                      input_shape=x_train.shape[1:],
                                      num_features=len(tokenizer_index)+1,
