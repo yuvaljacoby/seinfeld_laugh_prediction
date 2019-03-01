@@ -21,7 +21,7 @@ TOKEN_MODE = 'word'
 MIN_DOCUMENT_FREQUENCY = 2
 
 # Limit on the length of text sequences. Sequences longer than this
-# will be truncated.
+# will be truncated. Sequences shorter will be zero padded.
 MAX_SEQUENCE_LENGTH = 20
 
 
@@ -165,7 +165,7 @@ def get_sequence_data(df_train, df_test):
 
 def prepare_multi_sentence_data(x_train, x_val, y_train, y_val,
                                 additional_ftrs_train, additional_ftrs_val, num_sentences=5):
-
+    # prepare the data by taking each sentence and adding num_sentences after it
     x_train_multi = np.zeros((x_train.shape[0] - num_sentences, num_sentences, x_train.shape[1]))
     x_val_multi = np.zeros((x_val.shape[0] - num_sentences, num_sentences, x_val.shape[1]))
 
@@ -187,7 +187,7 @@ def prepare_multi_sentence_data(x_train, x_val, y_train, y_val,
            additional_features_train_multi, additional_features_val_multi
 
 def prepare_additional_ftrs(df):
-    # add additional high level features to be concatted in the model
+    # add additional high level features to be concatenated in the model
     num_ftrs = 14
     additional_features = np.zeros((df.shape[0], num_ftrs))
     additional_features[df.character == "JERRY", 0] = 1

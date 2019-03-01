@@ -6,10 +6,6 @@ from seinfeld_playground import *
 import os
 import argparse
 
-# module_url = "https://tfhub.dev/google/universal-sentence-encoder-large/3"
-# Import the Universal Sentence Encoder's TF Hub module
-# embed = hub.Module(module_url)
-
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--out_path')
@@ -67,7 +63,7 @@ if __name__ == "__main__":
         args.train_Multi_LSTM = True
 
 
-
+    # prepare additional features for the models
     additional_features_train = prepare_additional_ftrs(df_train)
     additional_features_val = prepare_additional_ftrs(df_test)
 
@@ -144,17 +140,17 @@ if __name__ == "__main__":
 
             tf.keras.models.save_model(model_cnn_lstm_multi_fit, '%s/trained_models/lstm_multi_model.hdf5'%args.out_path, overwrite=True, include_optimizer=True)
         if args.run_predict:
+            # for prediction here we make a "new" stateful model and copy the weights, this allows us to maintain history between predictions
             model_cnn_lstm_multi_stateful = multiSentence_CNN_LSTM(blocks=3, filters=32, kernel_size=5, embedding_dim=100, dropout_rate=0.5, pool_size=2, input_shape=(1, MAX_SEQUENCE_LENGTH), num_features=len(tokenizer_index)+1, embedding_matrix=embedding_matrix, use_pretrained_embedding=True, is_embedding_trainable=True, use_additional_features=True, num_additional_features=additional_features_train.shape[1], stateful=True)
             old_weights = model_cnn_lstm_multi_fit.get_weights()
             model_cnn_lstm_multi_stateful.set_weights(old_weights)
             # compile model
             model_cnn_lstm_multi_stateful.compile(loss='mean_squared_error', optimizer='adam')
-            # y_hat_val_cnn_lstm_multi = model_cnn_lstm_multi_fit.predict([x_val_multi, additional_features_val_multi])[0][:, num_sentences-1]
             y_hat_val_cnn_lstm_multi = model_cnn_lstm_multi_stateful.predict([np.reshape(x_val, (-1, 1, MAX_SEQUENCE_LENGTH)), np.reshape(additional_features_val, (-1, 1, 14))], batch_size=1)[0][:, 0]
             y_hats.append(y_hat_val_cnn_lstm_multi)
-            # y_s.append(y_val_multi[:,num_sentences - 1])
             y_s.append(y_val)
             labels.append('LSTM_MULTI')
+
     if args.train_CNN:
         print("Training cnn model")
         if not args.load_models:
@@ -289,7 +285,7 @@ if __name__ == "__main__":
         print("Finished training LSTM no ftrs \n\n")
     print("Finished all training\n\n")
     if args.run_predict:
-        y_hat_val_logistic_regression = Model_OneHotEncoding(df_train, df_test)
+        y_hat_val_logistic_regression = logisticRegressionModel(df_train, df_test)
         y_hats.append(y_hat_val_logistic_regression)
         labels.append('logistic regression')
         y_s.append(y_val)
@@ -304,5 +300,3 @@ if __name__ == "__main__":
         auc = compare_models_roc_curve(y_s, y_hats, labels, out_dir=args.out_path)
         print(auc)
         plot_confusion_matrix(y_s, y_hats, labels, out_dir=args.out_path)
-
-        # {'lr': 0.5806999794296898, 'LSTM': 0.6437542665548818, 'CNN': 0.6501669147649404, 'LSTM_MULTI': 0.6998002534479721}

@@ -8,6 +8,42 @@ from sklearn.feature_extraction.text import CountVectorizer
 import gensim
 
 
+#TODO maybe remove this
+
+
+def getTrigramEncoding(text_array):
+    freq = CountVectorizer(ngram_range=(3, 3), analyzer='char_wb') # trigram
+    corpus_trigrams = freq.fit_transform(text_array)
+
+    onehot = Binarizer()
+    corpus_trigrams_one_hot = onehot.fit_transform(corpus_trigrams.toarray())
+
+    return freq, corpus_trigrams_one_hot
+
+#TODO maybe remove this
+def getWord2Vec(text_array, min_count=5, window_size=5, model_size=250):
+    """
+    Method that handles the cleaning, tokenizing of the corpus and training of the model on that corpus.
+    :param text_array: The corpus, as an array of sentences
+    :param min_count: How many times a word must appear to be included
+    :param window_size: `window` is the maximum distance between the current and predicted word within a sentence.
+    :param model_size: the dimensionality of the feature vectors.
+    :param clean: Whether to clean the corpus
+    :return:
+    """
+    corpus_for_word2vec = text_array
+    corpus_for_word2vec = [sentence.split() for sentence in corpus_for_word2vec]
+    print('Starting to train model')
+    try:
+        model = gensim.models.Word2Vec(corpus_for_word2vec, min_count=min_count,
+                                            window=window_size, size=model_size, iter=50)
+    except RuntimeError:
+        print('No word appeared %d times, reran with min_count=1' % min_count)
+        model = gensim.models.Word2Vec(corpus_for_word2vec, min_count=1,
+                                            window=window_size, size=model_size, iter=50)
+    return model
+
+#TODO maybe remove this
 def clean_characters(df):
     max_in_a_row = 10
     curr_character = df['character'][0]  # The current character speaking.
@@ -92,7 +128,7 @@ def load_corpus():
     df['global_episode_num'] = create_index_usingduplicated(df, ['season', 'episode_num'])
     return df
 
-
+#TODO maybe remove this
 def plotStuff(df_to_plot):
     # sentence time length by character and by funniness
     g = sns.FacetGrid(df_to_plot, col='character', row='is_funny')
@@ -123,45 +159,6 @@ def getOneHotEncoding(text_array, is_binary=True):
     freq = cv.fit_transform(text_array)
 
     return cv, freq
-
-
-def getTrigramEncoding(text_array):
-    freq = CountVectorizer(ngram_range=(3, 3), analyzer='char_wb') # trigram
-    corpus_trigrams = freq.fit_transform(text_array)
-
-    onehot = Binarizer()
-    corpus_trigrams_one_hot = onehot.fit_transform(corpus_trigrams.toarray())
-
-    return freq, corpus_trigrams_one_hot
-
-
-def getWord2Vec(text_array, min_count=5, window_size=5, model_size=250, clean=False):
-    """
-    Method that handles the cleaning, tokenizing of the corpus and training of the model on that corpus.
-    :param text_array: The corpus, as an array of sentences
-    :param min_count: How many times a word must appear to be included
-    :param window_size: `window` is the maximum distance between the current and predicted word within a sentence.
-    :param model_size: the dimensionality of the feature vectors.
-    :param clean: Whether to clean the corpus
-    :return:
-    """
-    if clean:
-        corpus_for_word2vec = text_array
-        # TODO
-        # corpus_for_word2vec = clean_corpus(text_array)
-    else:
-        corpus_for_word2vec = text_array
-    corpus_for_word2vec = [sentence.split() for sentence in corpus_for_word2vec]
-    print('Starting to train model')
-    try:
-        model = gensim.models.Word2Vec(corpus_for_word2vec, min_count=min_count,
-                                            window=window_size, size=model_size, iter=50)
-    except RuntimeError:
-        print('No word appeared %d times, reran with min_count=1' % min_count)
-        model = gensim.models.Word2Vec(corpus_for_word2vec, min_count=1,
-                                            window=window_size, size=model_size, iter=50)
-    return model
-
 
 def getSceneData(df):
     df.loc[:, 'time_from_prev'] = np.array([0] + [df.start[i] - df.end[i - 1]
@@ -218,20 +215,3 @@ if __name__ == "__main__":
     print(corpus_one_hot.shape)
     # freq_trigrams, corpus_trigrams_one_hot = getTrigramEncoding(df.txt)
 
-
-
-
-"""
-Implementation ideas:
-1. Implement simple tfIdf model and classify sentence on its own
-2. Use word2vec instead and a CNN only.
-3. Use word2vec and CNN + LSTM model to use history of sequential sentences
-4. Use word2vec + other handcrafter features and CNN + LSTM
-5. Use transformer
-
-Visualization ideas:
-1. Show different insights with simple plots of funniness vs time/character etc
-2. Show TSNE of corpus
-3. Try and find different clusters depending on character or subject
-4. Try and visualize attention mechanism in LSTM
-"""

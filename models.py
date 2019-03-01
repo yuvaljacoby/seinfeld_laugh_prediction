@@ -15,7 +15,15 @@ from sklearn.linear_model import LogisticRegression
 from seinfeld_playground import *
 
 
-def Model_OneHotEncoding(df_train, df_test):
+def logisticRegressionModel(df_train, df_test):
+    """Runs an instance of logistic Regression on the training dataframe, encoded as one hot bag of words
+
+    # Arguments
+        df_train: dataFrame, training dataframe
+        df_test: dataFrame, testing dataframe
+    # Returns
+        Predictions of test dataframe
+    """
     y_train = df_train.is_funny
 
     # encode the train text using OneHotEncoding
@@ -42,15 +50,18 @@ def mlp_model(input_shape, layers=2, units=64, dropout_rate=0.3):
         An MLP model instance.
     """
     op_units, op_activation = 1, 'sigmoid'
+    # init a sequential model
     model = models.Sequential()
     model.add(Dropout(rate=dropout_rate, input_shape=input_shape))
-
+    # add dense layers
     for _ in range(layers - 1):
         model.add(Dense(units=units, activation='relu'))
         model.add(Dropout(rate=dropout_rate))
-
+    # predict layer
     model.add(Dense(units=op_units, activation=op_activation))
     return model
+
+
 
 def sepcnn_model(blocks,
                  filters,
@@ -76,18 +87,20 @@ def sepcnn_model(blocks,
         pool_size: int, factor by which to downscale input at MaxPooling layer.
         input_shape: tuple, shape of input to the model.
         num_features: int, number of words (embedding input dimension).
+        num_additional_features: int, number of additional high level features in the model
         use_pretrained_embedding: bool, true if pre-trained embedding is on.
         is_embedding_trainable: bool, true if embedding layer is trainable.
         embedding_matrix: dict, dictionary with embedding coefficients.
+        use_additional_features: bool, true if using additional high level features
 
     # Returns
         A sepCNN model instance.
     """
     op_units, op_activation = 1, 'sigmoid'
 
+    # input is a batch of sentences where each sentence is a series of indices of the words
     sequence_input = Input(shape=(input_shape[0],), dtype='int32')
-
-    # embedded_sequences = tf.keras.layers.Lambda(UniversalEmbedding, output_shape=(512,))(sequence_input)
+    # if using a pretrained embedding then load it, otherwise init randomly
     if use_pretrained_embedding is True:
         embedded_sequences = Embedding(num_features, embedding_matrix.shape[1], weights=[embedding_matrix],
                                                        input_length=input_shape[0], trainable=is_embedding_trainable)(sequence_input)
@@ -111,17 +124,21 @@ def sepcnn_model(blocks,
         max_pool = MaxPooling1D(pool_size=pool_size)(conv2)
 
         return max_pool
+
+    # go through conv blocks (1D sep conv, 1D sep conv, max pool
     conv_blocks = [conv_block(embedded_sequences)]
     for i in range(blocks - 2):
         conv_blocks.append(conv_block(conv_blocks[i]))
 
+    # average pool over all the words
     avg_pool = GlobalAveragePooling1D()(conv_blocks[-1])
 
+    # dense layer before concat of high level features (or output)
     affine1 = Dense(64, activation='relu')(avg_pool)
+    # if we are adding additional features then concatenate them before affine layer and prediction
     if use_additional_features:
         additional_features = Input(shape=(num_additional_features,), name='char_num')
         concat_layer = Concatenate()([affine1, additional_features])
-        # affine2 = Dense(op_units, activation='relu')(concat_layer)
         output_layer = Dense(op_units, activation=op_activation, name='final_output')(concat_layer)
         model = tf.keras.Model(inputs=[sequence_input, additional_features], outputs=output_layer)
     else:
@@ -139,17 +156,33 @@ def LSTM_model(embedding_dim,
                is_embedding_trainable=False,
                embedding_matrix=None,
                use_additional_features=True):
+    """Creates an instance of a LSTMmodel.
 
+    # Arguments
+        embedding_dim: int, dimension of the embedding vectors.
+        dropout_rate: float, percentage of input to drop at Dropout layers.
+        input_shape: tuple, shape of input to the model.
+        num_features: int, number of words (embedding input dimension).
+        num_additional_features: int, number of additional high level features in the model
+        use_pretrained_embedding: bool, true if pre-trained embedding is on.
+        is_embedding_trainable: bool, true if embedding layer is trainable.
+        embedding_matrix: dict, dictionary with embedding coefficients.
+        use_additional_features: bool, true if using additional high level features
+
+    # Returns
+        A LSTM model instance.
+    """
+    # input is a batch of sentences where each sentence is a series of indices of the words
     sequence_input = Input(shape=(input_shape[0],), dtype='int32')
 
-    # embedded_sequences = tf.keras.layers.Lambda(UniversalEmbedding, output_shape=(512,))(sequence_input)
+    # if using a pretrained embedding then load it, otherwise init randomly
     if use_pretrained_embedding is True:
         embedded_sequences = Embedding(num_features, embedding_matrix.shape[1], weights=[embedding_matrix],
                                                        input_length=input_shape[0], trainable=is_embedding_trainable)(sequence_input)
     else:
         embedded_sequences = Embedding(num_features, embedding_dim, input_length=input_shape[0])(sequence_input)
 
-
+    # the embedded words are inputted into a bidirectional LSTM cell
     lstm = tf.keras.layers.Bidirectional(tf.keras.layers.LSTM
                                          (128,
                                           dropout=dropout_rate,
@@ -164,9 +197,8 @@ def LSTM_model(embedding_dim,
                                                                                                             return_state=True,
                                                                                                             recurrent_activation='relu',
                                                                                                             recurrent_initializer='glorot_uniform'))(lstm)
-
+    # concatenate the hidden states of forward and backward
     state_h = Concatenate()([forward_h, backward_h])
-    state_c = Concatenate()([forward_c, backward_c])
 
     def attention_lambda(input_lambda):
         lstm_out = input_lambda[0]
@@ -182,10 +214,12 @@ def LSTM_model(embedding_dim,
         context_vector = tf.keras.backend.sum(context_vector, axis=1)
         return context_vector, attention_weights
 
+    # get a weighted context vector (of the hidden state) using an attention mechanism
     context_vector, attention_weights = Lambda(attention_lambda)([lstm, state_h])
-
+    # output a prediction at this stage too
     lstm_pred = tf.keras.layers.Dense(1, activation='sigmoid')(context_vector)
 
+    # if we are adding additional features then concatenate them before affine layer and prediction
     if use_additional_features:
         additional_features = Input(shape=(num_additional_features,), name='char_num')
         x = Concatenate()([context_vector, additional_features])
@@ -215,7 +249,7 @@ def multiSentence_CNN_LSTM(blocks,
                           embedding_matrix=None,
                           use_additional_features=True,
                           stateful=False):
-    """Creates an instance of a separable CNN model.
+    """Creates an instance of a Multi Sentence LSTM model.
 
     # Arguments
         blocks: int, number of pairs of sepCNN and pooling blocks in the model.
@@ -226,27 +260,31 @@ def multiSentence_CNN_LSTM(blocks,
         pool_size: int, factor by which to downscale input at MaxPooling layer.
         input_shape: tuple, shape of input to the model.
         num_features: int, number of words (embedding input dimension).
+        num_additional_features: int, number of additional high level features in the model
         use_pretrained_embedding: bool, true if pre-trained embedding is on.
         is_embedding_trainable: bool, true if embedding layer is trainable.
         embedding_matrix: dict, dictionary with embedding coefficients.
+        use_additional_features: bool, true if using additional high level features
+        stateful: bool, whether the model is to be stateful (maintain state in LSTM between batches)
 
     # Returns
-        A sepCNN model instance.
+        A Multi Sentence LSTM model instance.
     """
-
+    # When running inference we want the lstm to be stateful so it maintains state between examples.
+    # Regardless, the input is a batch of sequences of sentences of length 20. Where each sentence is vector of indices of the words in the sentence
     if stateful:
         sequence_input = Input(shape=(input_shape[0], input_shape[1],), batch_size=1, dtype='int32')
     else:
         sequence_input = Input(shape=(input_shape[0], input_shape[1],), dtype='int32')
 
-    # embedded_sequences = tf.keras.layers.Lambda(UniversalEmbedding, output_shape=(512,))(sequence_input)
+    # Each action other than the LSTM is time-distributed, meaning it is done to each time step (sentence in a sequence) independently
+    # if using a pretrained embedding then load it, otherwise init randomly
     if use_pretrained_embedding is True:
         embedded_sequences = TimeDistributed(Embedding(num_features, embedding_matrix.shape[1], weights=[embedding_matrix],
                                                             input_length=input_shape[1], trainable=is_embedding_trainable))(sequence_input)
     else:
         embedded_sequences = TimeDistributed(Embedding(num_features, embedding_dim, input_length=input_shape[1]))(sequence_input)
 
-    print(embedded_sequences.shape)
     def conv_block(input_layer):
         dropout = Dropout(rate=dropout_rate)(input_layer)
         conv1 = TimeDistributed(SeparableConv1D(filters=filters,
@@ -264,6 +302,7 @@ def multiSentence_CNN_LSTM(blocks,
         max_pool = TimeDistributed(MaxPooling1D(pool_size=pool_size))(conv2)
 
         return max_pool
+    # go through conv blocks (1D sep conv, 1D sep conv, max pool
     conv_blocks = [conv_block(embedded_sequences)]
     for i in range(blocks - 2):
         conv_blocks.append(conv_block(conv_blocks[i]))
@@ -280,9 +319,11 @@ def multiSentence_CNN_LSTM(blocks,
                           bias_initializer='random_uniform',
                           depthwise_initializer='random_uniform',
                           padding='same'))(conv_a)
+    # average pool over all the words
     avg_pool = TimeDistributed(GlobalAveragePooling1D())(conv_b)
     affine1 = TimeDistributed(Dense(64, activation='relu'))(avg_pool)
 
+    # run sentences through an LSTM
     lstm = tf.keras.layers.Bidirectional(tf.keras.layers.LSTM
                                          (128,
                                           dropout=dropout_rate,
@@ -301,8 +342,10 @@ def multiSentence_CNN_LSTM(blocks,
                                                                                                             stateful=stateful))(lstm)
 
 
+    # output a prediction for each sentence at this state
     lstm_pred = TimeDistributed(tf.keras.layers.Dense(1, activation='sigmoid'))(lstm)
 
+    # if we are adding additional features then concatenate them before affine layer and prediction
     if use_additional_features:
         if stateful:
             additional_features = Input(shape=(input_shape[0], num_additional_features,), batch_size=1, name='additional_features')
