@@ -1,7 +1,8 @@
-#LyX 2.3 created this file. For more info see http://www.lyx.org/
-\lyxformat 474
+#LyX 2.2 created this file. For more info see http://www.lyx.org/
+\lyxformat 503
 \begin_document
 \begin_header
+\origin unavailable
 \textclass article
 \use_default_options true
 \begin_modules
@@ -12,16 +13,16 @@ theorems-ams
 \language_package default
 \inputencoding auto
 \fontencoding global
-\font_roman default
-\font_sans default
-\font_typewriter default
-\font_math auto
+\font_roman "default" "default"
+\font_sans "default" "default"
+\font_typewriter "default" "default"
+\font_math "auto" "auto"
 \font_default_family default
 \use_non_tex_fonts false
 \font_sc false
 \font_osf false
-\font_sf_scale 100
-\font_tt_scale 100
+\font_sf_scale 100 100
+\font_tt_scale 100 100
 \graphics default
 \default_output_format default
 \output_sync 0
@@ -210,11 +211,7 @@ funniness
 \end_inset
 
  of each sentence.
- 
-\end_layout
-
-\begin_layout Standard
-First, we validate the data.
+ First, we validate the data.
  We find certain flaws and inaccuracies, and think about how to deal with
  them.
  Second, we analyze the data and visualize its content.
@@ -249,10 +246,7 @@ key "key-2,key-3,key-6"
 \end_inset
 
 .
-\end_layout
-
-\begin_layout Standard
-One of the problems with detecting humor is the subjectiveness of the term
+ One of the problems with detecting humor is the subjectiveness of the term
  
 \begin_inset Quotes eld
 \end_inset
@@ -263,10 +257,7 @@ funny
 
  i.e.
  the absence of ground truth.
-\end_layout
-
-\begin_layout Standard
-In this task, we will try to predict the Seinfeld writer's humor, in this
+ In this task, we will try to predict the Seinfeld writer's humor, in this
  case we do have labels, thought this work we use funny as funny be Seinfeld
  writers.
 \end_layout
@@ -278,10 +269,7 @@ Understanding Text
 \begin_layout Standard
 In order to understand humor in text we need to understand the text where
  we have ambiguity of words, dynamic language etc..
-\end_layout
-
-\begin_layout Standard
-Moreover, context and timing of text are really important for understanding
+ Moreover, context and timing of text are really important for understanding
  humor.
  When we watch an episode of Seinfeld we understand the overall topic, and
  remember events that occurred previously in the episode (and even in other
@@ -304,8 +292,8 @@ Funny is not taken only from the text
 
 \begin_layout Standard
 When we watch Seinfeld and laugh, it is not only because of the text.
- Most of the times it is affected from the tone, and more generally the
- whole scene's video.
+ Most of the times it is affected by the intonation, and more generally
+ the whole scene's video.
  For example when Kramer enters the room demonstratively 
 \begin_inset Quotes eld
 \end_inset
@@ -316,10 +304,10 @@ in a funny way
 
 .
  These aspects are not always obvious in the text itself.
-\end_layout
-
-\begin_layout Standard
-Some works try to predict funninesses in sitcoms, such as 
+ So already there is a limit to the accuracy that can be achieved from a
+ purely textual attempt.
+ Regardless there have been some other works that have attempted to predict
+ funninesses in sitcoms, such as 
 \begin_inset Quotes eld
 \end_inset
 
@@ -327,14 +315,14 @@ The Big Bang Theory
 \begin_inset Quotes erd
 \end_inset
 
- 
+, using text
 \begin_inset CommandInset citation
 LatexCommand cite
 key "key-4"
 
 \end_inset
 
-/
+.
 \end_layout
 
 \begin_layout Section
@@ -348,10 +336,7 @@ Introduction
 \begin_layout Standard
 The data we use is basically Seinfeld's subtitles, coupled with the speaking
  character and timing - of the sentences said and the laugh-tracks (if funny).
-\end_layout
-
-\begin_layout Standard
-We downloaded the dataset from 
+ We downloaded the dataset from 
 \begin_inset CommandInset href
 LatexCommand href
 name "GitHub"
@@ -393,11 +378,7 @@ Specs
 \begin_layout Standard
 The dataset contains 96 humor annotated “Seinfeld” screenplays, along with
  the timing of the laughter and the timing of the dialog.
- 
-\end_layout
-
-\begin_layout Standard
-R.
+ R.
  Y.
  Shalom and Y.
  Golberg got the subtitles from 
@@ -427,61 +408,61 @@ key "key-1"
 \end_inset
 
 .
-\end_layout
-
-\begin_layout Standard
-Due to the technique they used to build the data (using the fact that the
+ Due to the technique they used to build the data (using the fact that the
  dialogs were recorded in mono, and the laugh-track in stereo) we have the
  episodes starting at season 4 episode 6.
  This is because the previous episodes were not recorded this way.
-\end_layout
+\begin_inset Newline newline
+\end_inset
 
-\begin_layout Standard
 There are 46,497 sentences in total, associated with several properties:
 \end_layout
 
 \begin_layout Itemize
-'character': The speaking character.
+'character': The speaking character
 \end_layout
 
 \begin_layout Itemize
-'txt': The text.
+'txt': The text
 \end_layout
 
 \begin_layout Itemize
-'start': Start time (in seconds).
+'start': Start time (in seconds)
 \end_layout
 
 \begin_layout Itemize
-'end': End time (in seconds).
+'end': End time (in seconds)
 \end_layout
 
 \begin_layout Itemize
-'is_funny': Whether a laugh occurred after this sentence or not.
+'is_funny': Whether a laugh occurred after this sentence or not
 \end_layout
 
 \begin_layout Itemize
 'laugh_time': If this sentence is funny, this is the timing of the laugh
  (in seconds).
- Note that if the sentence was not funny, this is set to NaN.
+ Note that if the sentence was not funny, this is set to NaN
 \end_layout
 
 \begin_layout Itemize
 Various meta-data about the episode, such as 'season' (season's number),
  'episode_num', 'episode_name', 'total_lines', 'global_episode_num' (in
- the whole dataset).
+ the whole dataset)
 \end_layout
 
 \begin_layout Itemize
 Useful features of the sentence, such as 'num_words', 'length' (in seconds),
- 'line_num' (in the episode), 'avg_word_length' (in letters).
+ 'line_num' (in the episode), 'avg_word_length' (in letters)
 \end_layout
 
 \begin_layout Standard
 For example, here are 3 lines from our dataset (meta-data such as season,
  episode, etc omitted).
-\end_layout
+\begin_inset Separator parbreak
+\end_inset
 
+
+\end_layout
 
 \begin_layout Standard
 \align center
@@ -776,6 +757,10 @@ T
 \end_inset
 
 
+\begin_inset Newline newline
+\end_inset
+
+
 \end_layout
 
 \begin_layout Standard
@@ -791,7 +776,7 @@ Out of the
 \begin_inset Formula $13,560$
 \end_inset
 
-)
+).
 \end_layout
 
 \begin_layout Subsection
@@ -807,16 +792,14 @@ nb'.
 \begin_layout Standard
 The first task was analyzing the dataset and validating it.
  We watched several episodes and looked at the dataset at the same time.
-\end_layout
-
-\begin_layout Standard
-We saw that the text is pretty accurate, except minor glitches such as,
+ We saw that the text is pretty accurate, except minor glitches such as,
  "You met her in the supermarket.
  How did you do that?" was shortened to "You met her in the supermarket.
  How?".
-\end_layout
+ 
+\begin_inset Newline newline
+\end_inset
 
-\begin_layout Standard
 The timing of the talking are also pretty accurate, and by reading the paper
  of Ran Yad-Shalom 
 \begin_inset CommandInset citation
@@ -837,10 +820,7 @@ The first flaw: the laugh-tracks
 \begin_layout Standard
 The laugh track is in the middle of a sentence and sometimes it is during
  multiple sentences.
-\end_layout
-
-\begin_layout Standard
-We treat a sentence as funny if there was a laughter during the sentence
+ We treat a sentence as funny if there was a laughter during the sentence
  (sentence start <= laugh time <= sentence end).
 \end_layout
 
@@ -852,40 +832,22 @@ The second flaw: the speaking character is sometime mislabeled.
 While visualizing the data we saw a weird phenomenon (fig 1), the histogram
  of the amount of sentences in a row has a very long tail, with up to 31
  sentences in a row.
-\end_layout
-
-\begin_layout Standard
-While there are scenarios where this is possible (a phone call where we
+ While there are scenarios where this is possible (a phone call where we
  hear only one side, or a long monologue), we decided to further investigate
  and watched multiple scenes where this happens, while doing so we did see
- that in many situations this is a mislabel.
-\end_layout
-
-\begin_layout Standard
-To do this, we collected all these cases, and analyzed them statistically.
- We saw that the mean sentences-in-a-row is around 1, and that 99% of the
- times it is below 8.
-\end_layout
-
-\begin_layout Standard
-Our solution was to mark these speaking characters as 'unknown', but keep
- the other attributes (such as text, duration, funniness, etc).
-\end_layout
-
-\begin_layout Standard
-
-
-\begin_inset Note Note
-status open
-
-\begin_layout Plain Layout
-TODO We ended up not using this, can say we fixed some of the obvious cases
- and saw also a lot of false positives so we didn't clean all of them
-\end_layout
-
+ that in many situations this is a mistake in the speaking character tag
+ of the data.
+ 
+\begin_inset Newline newline
 \end_inset
 
-
+We collected all these cases, and analyzed them statistically.
+ We saw that the mean sentences-in-a-row is around 1, and that 99% of the
+ times it is below 8.
+ We went over the cases where the amount of sentences said by a character
+ in a row is more than 8 and manually fixed some of them.
+ However, we did see that many of them are actual long monologues by one
+ character so we decided to keep them in the data.
 \end_layout
 
 \begin_layout Standard
@@ -924,6 +886,20 @@ tail
 ).
 \end_layout
 
+\begin_layout Subsubsection
+Splitting the sentences into scenes
+\end_layout
+
+\begin_layout Standard
+Our intuition was that information within a scene is more relevant to other
+ sentences in that scene.
+ So we attempted to split our data into scenes (by looking at average time
+ between sentences and character changes).
+ Unfortunately, the data was too noisy and we were not able to split it
+ up to an adequate level.
+ Our attempts can be seen in the 'Scene.ipynb' ipython notebook.
+\end_layout
+
 \begin_layout Subsection
 Data Visualizations
 \end_layout
@@ -953,13 +929,16 @@ We wanted to see if there are differences between funny and not-funny sentences
  are also pretty high.
  We found that the length in seconds and the length in #word behave different,
  and the speech-rate seems also like a good feature (see the figure below).
-\end_layout
+\begin_inset Newline newline
+\end_inset
 
-\begin_layout Standard
 Our conclusions were to add these features to the sentence.
  We saw that the results improved when we gave them these features.
-\end_layout
+\begin_inset Separator parbreak
+\end_inset
 
+
+\end_layout
 
 \begin_layout Standard
 \align center
@@ -984,10 +963,7 @@ Word-Clouds
 \begin_layout Standard
 Intuitively, each character tends to use different vocabulary, we tried
  to see if that also holds for funny/not funny sentences.
-\end_layout
-
-\begin_layout Standard
-To do so we removed very frequent English words (using 
+ To do so we removed very frequent English words (using the 
 \begin_inset CommandInset href
 LatexCommand href
 name "gensim"
@@ -995,17 +971,19 @@ target "https://radimrehurek.com/gensim/"
 
 \end_inset
 
- corpus ).
-\end_layout
+ corpus).
+\begin_inset Newline newline
+\end_inset
 
-\begin_layout Standard
 First, we found that the main characters have a variety of words which they
  all use, for example: 
 \shape italic
 yeah, oh.
-\end_layout
+\shape default
 
-\begin_layout Standard
+\begin_inset Newline newline
+\end_inset
+
 And also a couple of distinct words such as: Jerry - 
 \shape italic
 car
@@ -1013,14 +991,16 @@ car
 , Kramer - 
 \shape italic
 Newman.
-\end_layout
+\shape default
 
-\begin_layout Standard
+\begin_inset Newline newline
+\end_inset
+
 Further, we wanted to see if characters use different words in funny and
  non funny sentences.
-\end_layout
+\begin_inset Newline newline
+\end_inset
 
-\begin_layout Standard
 In order to get significant words, we filtered out words that are common
  in both types i.e.
  we used only words that: 
@@ -1029,6 +1009,10 @@ In order to get significant words, we filtered out words that are common
 
 , in figure-3 we can see Jerry's word clouds, for example when Jerry talks
  about dating it's usually funny.
+\begin_inset Separator parbreak
+\end_inset
+
+
 \end_layout
 
 \begin_layout Standard
@@ -1044,7 +1028,7 @@ In order to get significant words, we filtered out words that are common
 \begin_inset Newline newline
 \end_inset
 
-figure 3 - Jerry Word Cloud
+figure 3 - Jerry's Word Cloud
 \end_layout
 
 \begin_layout Subsubsection
@@ -1067,6 +1051,10 @@ community
  of the 4 main characters (Jerry, George, Kramer and Elaine), as well as
  other secondary characters (such as Jerry's parents Morty and Helen), this
  graph is interactive and for full experience please open the notebook.
+\begin_inset Separator parbreak
+\end_inset
+
+
 \end_layout
 
 \begin_layout Standard
@@ -1148,9 +1136,9 @@ do
 preserve the order of the words.
  We felt these type of models would more accurately represent our task since
  we could not find any major correlation between funniness and certain words.
-\end_layout
+\begin_inset Newline newline
+\end_inset
 
-\begin_layout Standard
 In addition, after our initial data analysis we saw that many of the high-level
  features of the sentence can be indicative of its 
 \begin_inset Quotes eld
@@ -1211,13 +1199,33 @@ Given a sentence each word is put through a Glove embedding layer to a dimension
  on the experiment).
  Then after a few more Fully Connected layers we output a measure of funniness.
  
-\end_layout
+\begin_inset Newline newline
+\end_inset
 
-\begin_layout Standard
 We also added another output directly after the attention mechanism (before
  the concatenation with high level features) in order to ensure the loss
  propogates in some way back to the LSTM cells.
  Our final loss is a weighted binary cross-entropy loss of these two outputs.
+\end_layout
+
+\begin_layout Standard
+\align center
+\begin_inset Graphics
+	filename LSTM_Graph.png
+	scale 50
+
+\end_inset
+
+
+\begin_inset Newline newline
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\align center
+figure 5 - Long Short Term Memory model's graph
 \end_layout
 
 \begin_layout Subsubsection
@@ -1227,7 +1235,7 @@ Convolutional Neural Network model:
 \begin_layout Standard
 Given a sentence each word is put through a Glove embedding layer to a dimension
  of 100.
- This is then passed through 3 blocks of the following:
+ This is then passed through 3 CNN blocks of the following:
 \end_layout
 
 \begin_layout Itemize
@@ -1247,6 +1255,22 @@ Then a 1 dimensional Average Pooling layer and a Fully Connected layer.
  Then depending on the experiment, a concatenation of the high level features
  and another Fully Connected layer for the output.
  We then apply a binary cross-entropy loss on the two outputs.
+\end_layout
+
+\begin_layout Standard
+\align center
+\begin_inset Graphics
+	filename CNN_graph.png
+	scale 50
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\align center
+figure 6 - Convolutional Neural Network model's graph
 \end_layout
 
 \begin_layout Standard
@@ -1279,10 +1303,22 @@ funniness
 \end_layout
 
 \begin_layout Standard
+\align center
 
 \series bold
 \emph on
-All the model graphs are included in the appendix.
+\begin_inset Graphics
+	filename Multi_sentence_lstm_graph.png
+	scale 50
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\align center
+figure 7 - Multi Sentence LSTM model's graph
 \end_layout
 
 \begin_layout Section
@@ -1299,8 +1335,11 @@ ipynb'.
 After we finished training the different models we built, we turned to analyze
  their performance.
  We looked visually at some of the results, and plotted several measures.
-\end_layout
+\begin_inset Separator parbreak
+\end_inset
 
+
+\end_layout
 
 \begin_layout Standard
 \align center
@@ -1315,15 +1354,15 @@ After we finished training the different models we built, we turned to analyze
 \begin_inset Newline newline
 \end_inset
 
-figure 5 - ROC-curves
+figure 8 - ROC-curves
 \end_layout
 
 \begin_layout Standard
+\noindent
 We saw that the features we added helped the models greatly.
  Here are the scores for the CNN and LSTM models, with/without the additional
  features.
 \end_layout
-
 
 \begin_layout Standard
 \align center
@@ -1346,13 +1385,18 @@ We saw that the features we added helped the models greatly.
 \begin_inset Newline newline
 \end_inset
 
-figure 6 - Scores with/without the additional features.
+figure 9 - Scores with/without the additional features.
 \end_layout
 
 \begin_layout Standard
+\noindent
 We also attach the confusion matrices of the predictions of our various
  models, showing a clear improvement from Bag Of Word models to Sequence
  models, and from Sequence models without high level features to those with.
+\begin_inset Separator parbreak
+\end_inset
+
+
 \end_layout
 
 \begin_layout Standard
@@ -1368,33 +1412,45 @@ We also attach the confusion matrices of the predictions of our various
 \begin_inset Newline newline
 \end_inset
 
-figure 7 - Confusion matrices comparison
+figure 10 - Confusion matrices comparison
 \end_layout
 
 \begin_layout Standard
+\noindent
 It's not perfect, but it definitely learned something.
  We must remember that our data is quite noisy, so there is a limit on the
  accuracy these model can achieve.
 \end_layout
 
 \begin_layout Standard
+\noindent
 We tried to split the 4 main characters and see if the performances are
  different when we look at certain character.
- We found that there are minor changes, but overall they're all quite the
+ 
+\end_layout
+
+\begin_layout Standard
+\noindent
+We found that there are minor changes, but overall they're all quite the
  same.
  You can see for yourself in the notebook.
 \end_layout
 
 \begin_layout Standard
+\noindent
 Furthermore, we wanted to look at some of the results visually.
 \end_layout
 
 \begin_layout Standard
+\noindent
 Here is the most severe false-positive (i.e.
  the model thought it's funny but it doesn't).
  We also add some context (5 sentences before the allegedly 'funny' sentence).
-\end_layout
+\begin_inset Separator parbreak
+\end_inset
 
+
+\end_layout
 
 \begin_layout Standard
 \align center
@@ -1409,7 +1465,7 @@ Here is the most severe false-positive (i.e.
 \begin_inset Newline newline
 \end_inset
 
-figure 8 - example of 
+figure 11 - example of 
 \begin_inset Quotes eld
 \end_inset
 
@@ -1421,10 +1477,14 @@ Severe
 \end_layout
 
 \begin_layout Standard
+\noindent
 Here are the severe false-negatives (i.e.
  the model thought it is not funny but it is):
-\end_layout
+\begin_inset Separator parbreak
+\end_inset
 
+
+\end_layout
 
 \begin_layout Standard
 \align center
@@ -1439,7 +1499,7 @@ Here are the severe false-negatives (i.e.
 \begin_inset Newline newline
 \end_inset
 
-figure 9 - example of 
+figure 12 - example of 
 \begin_inset Quotes eld
 \end_inset
 
@@ -1451,11 +1511,13 @@ Severe
 \end_layout
 
 \begin_layout Standard
+\noindent
 These mistakes don't seem that severe.
  By looking at it (without checking the label) one can think its label is
  the opposite.
- It demonstrates how difficult this task is and can explain why the Multi
- Sentence LSTM model did not give a large increase in accuracy.
+ It demonstrates how difficult this task is, how noisy the data is, and
+ can explain why the Multi Sentence LSTM model did not give a large increase
+ in accuracy.
  If we as humans find it hard to decide which specific sentence in a scene
  is a funny one, then it must be hard for our model.
  
@@ -1474,19 +1536,19 @@ ed multiple models that predict whether or not a sentence from seinfeld
  In addition, we showed that the additional features such as the speaker,
  rate of speaking and length are very indicitave of when there is laughter.
  
-\end_layout
+\begin_inset Newline newline
+\end_inset
 
-\begin_layout Standard
-While the data for the most part was accurate, we did find some issues with
- the task and the data that would be worth addressing in any future work.
+While the data for the most part was accurate, we did find some issues that
+ would be worth addressing in any future work.
  One of these issues was that many times sentences are funny or not based
  on factors other than text.
  Therefore, a nice work that could be attempted is inputting features of
  the intonation of a sentence (either through audio input or other annotation).
  
-\end_layout
+\begin_inset Newline newline
+\end_inset
 
-\begin_layout Standard
 It would also be interesting to use these methods on a combination of sitcoms
  and see whether we can generalize to other untrained sitcoms.
  One way to do so is to represent each character in the sitcom as some mixture
