@@ -207,15 +207,6 @@ def prepare_additional_ftrs(df, unique_chars):
     additional_features = np.zeros((df.shape[0], num_ftrs))
     for i, char in enumerate(unique_chars):
         additional_features[df.character == char, i] = 1
-    # additional_features[df.character == "JERRY", 0] = 1
-    # additional_features[df.character == "GEORGE", 1] = 1
-    # additional_features[df.character == "ELAINE", 2] = 1
-    # additional_features[df.character == "KRAMER", 3] = 1
-    # additional_features[df.character == "NEWMAN", 4] = 1
-    # additional_features[df.character == "MORTY", 5] = 1
-    # additional_features[df.character == "FRANK", 6] = 1
-    # additional_features[df.character == "ESTELLE", 7] = 1
-    # additional_features[df.character == "HELEN", 8] = 1
     additional_features[:, 9] = df.start
     additional_features[:, 10] = df.length
     additional_features[:, 11] = df.num_words
