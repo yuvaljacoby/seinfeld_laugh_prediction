@@ -1,4 +1,4 @@
-from seinfeld_playground import *
+from utils import *
 from train_utils import split_train_test
 from compare_models import compare_models_roc_curve, plot_confusion_matrix
 

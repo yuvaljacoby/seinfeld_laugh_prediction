@@ -1,5 +1,4 @@
 import tensorflow as tf
-from train_utils import *
 
 def train_ngram_model(model, x_train, y_train, x_val, y_val, learning_rate=1e-3,
                       epochs=5, batch_size=128):
@@ -38,7 +37,7 @@ def train_ngram_model(model, x_train, y_train, x_val, y_val, learning_rate=1e-3,
     history = history.history
     print('Validation accuracy: {acc}, loss: {loss}'.format(acc=history['val_acc'][-1], loss=history['val_loss'][-1]))
 
-    return history['val_acc'][-1], history['val_loss'][-1], model
+    return model
 
 def train_sequence_model(model, x_train, x_val, y_train, y_val, additional_features_train=None,
                          additional_features_val=None, multiple_outputs=False, batch_size=32, learning_rate=1e-3, epochs=100):
@@ -92,38 +91,36 @@ def train_sequence_model(model, x_train, x_val, y_train, y_val, additional_featu
                                 verbose=2, batch_size=batch_size)
     # Print results.
     history = history.history
-    if additional_features_train is not None:
-        if multiple_outputs:
-            try:
-                print('Validation accuracy: {acc}, loss: {loss}'.format(acc=history['final_output_acc'][-1], loss=history['final_output_loss'][-1]))
-                result = model.evaluate([x_val, additional_features_val], [y_val, y_val])
+    try:
+        if additional_features_train is not None:
+            if multiple_outputs:
+                try:
+                    print('Validation accuracy: {acc}, loss: {loss}'.format(acc=history['final_output_acc'][-1], loss=history['final_output_loss'][-1]))
+                    result = model.evaluate([x_val, additional_features_val], [y_val, y_val])
+                    print(result)
+                except KeyError:
+                    print('Validation accuracy: {acc}, loss: {loss}'.format(acc=history['val_time_distributed_14_acc'][-1], loss=history['val_time_distributed_14_loss'][-1]))
+                    result = model.evaluate([x_val, additional_features_val], [y_val, y_val])
+                    print(result)
+            else:
+                print('Validation accuracy: {acc}, loss: {loss}'.format(acc=history['val_acc'][-1], loss=history['val_loss'][-1]))
+                result = model.evaluate([x_val, additional_features_val], y_val)
                 print(result)
-                return history['final_output_acc'][-1], history['final_output_loss'][-1], model
-            except KeyError:
-                print('Validation accuracy: {acc}, loss: {loss}'.format(acc=history['val_time_distributed_14_acc'][-1], loss=history['val_time_distributed_14_loss'][-1]))
-                result = model.evaluate([x_val, additional_features_val], [y_val, y_val])
-                print(result)
-                return history['time_distributed_14_acc'][-1], history['time_distributed_14_loss'][-1], model
         else:
-            print('Validation accuracy: {acc}, loss: {loss}'.format(acc=history['val_acc'][-1], loss=history['val_loss'][-1]))
-            result = model.evaluate([x_val, additional_features_val], y_val)
-            print(result)
-            return history['val_acc'][-1], history['val_loss'][-1], model
-    else:
-        if multiple_outputs:
-            try:
-                print('Validation accuracy: {acc}, loss: {loss}'.format(acc=history['final_output_acc'][-1], loss=history['final_output_loss'][-1]))
-                result = model.evaluate(x_val, [y_val, y_val])
+            if multiple_outputs:
+                try:
+                    print('Validation accuracy: {acc}, loss: {loss}'.format(acc=history['final_output_acc'][-1], loss=history['final_output_loss'][-1]))
+                    result = model.evaluate(x_val, [y_val, y_val])
+                    print(result)
+                except KeyError:
+                    print('Validation accuracy: {acc}, loss: {loss}'.format(acc=history['val_time_distributed_14_acc'][-1], loss=history['val_time_distributed_14_loss'][-1]))
+                    result = model.evaluate(x_val, [y_val, y_val])
+                    print(result)
+            else:
+                print('Validation accuracy: {acc}, loss: {loss}'.format(acc=history['val_acc'][-1], loss=history['val_loss'][-1]))
+                result = model.evaluate(x_val, y_val)
                 print(result)
-                return history['final_output_acc'][-1], history['final_output_loss'][-1], model
-            except KeyError:
-                print('Validation accuracy: {acc}, loss: {loss}'.format(acc=history['val_time_distributed_14_acc'][-1], loss=history['val_time_distributed_14_loss'][-1]))
-                result = model.evaluate(x_val, [y_val, y_val])
-                print(result)
-                return history['time_distributed_14_acc'][-1], history['time_distributed_14_loss'][-1], model
-        else:
-            print('Validation accuracy: {acc}, loss: {loss}'.format(acc=history['val_acc'][-1], loss=history['val_loss'][-1]))
-            result = model.evaluate(x_val, y_val)
-            print(result)
-            return history['val_acc'][-1], history['val_loss'][-1], model
+    except KeyError:
+        pass
+    return model
 

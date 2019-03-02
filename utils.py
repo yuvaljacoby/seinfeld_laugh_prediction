@@ -1,47 +1,44 @@
-from seinfeld_laugh_corpus import corpus
 import numpy as np
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
-from sklearn.preprocessing import Binarizer
-from sklearn.feature_extraction.text import CountVectorizer
-import gensim
+from seinfeld_laugh_corpus import corpus
+
+def scene_permutation(df):
+    scene_groups = df.groupby('global_scene_number').groups
+    order = np.random.permutation(list(scene_groups.keys()))
+    order_idx = []
+
+    for i in order:
+        order_idx = np.hstack((order_idx, scene_groups[i].values))
+
+    return df.loc[order_idx, :].reset_index()
 
 
-#TODO maybe remove this
+def split_train_test(df, test_ratio=0.2, seed=42):
+    '''
+    Split data to train and test based on episode --> episodes will be fully in train / test
+    Then shuffle the scenes inside each split --> each scene will stay in order (but the scene after can from different time)
+    Uses global_episode_num and global_scene_number, start
+    :param df: df with features (using global_episode_num)
+    :param test_ratio: float [0,1] ratio of samples to keep in test
+    :param seed: int seed for randomness
+    :return: df_train, df_test
+    '''
 
+    df = df.sort_values(by=['global_episode_num', 'global_scene_number', 'start'])
+    np.random.seed(seed=seed)
+    test_episode = np.random.choice(df.global_episode_num,
+                                    size=int(len(df.global_episode_num.unique()) * test_ratio),
+                                    replace=False)
+    train_episode = set(df.global_episode_num) - set(test_episode)
 
-def getTrigramEncoding(text_array):
-    freq = CountVectorizer(ngram_range=(3, 3), analyzer='char_wb') # trigram
-    corpus_trigrams = freq.fit_transform(text_array)
+    df_train = df[df.global_episode_num.isin(train_episode)]
+    df_test = df[df.global_episode_num.isin(test_episode)]
 
-    onehot = Binarizer()
-    corpus_trigrams_one_hot = onehot.fit_transform(corpus_trigrams.toarray())
-
-    return freq, corpus_trigrams_one_hot
-
-#TODO maybe remove this
-def getWord2Vec(text_array, min_count=5, window_size=5, model_size=250):
-    """
-    Method that handles the cleaning, tokenizing of the corpus and training of the model on that corpus.
-    :param text_array: The corpus, as an array of sentences
-    :param min_count: How many times a word must appear to be included
-    :param window_size: `window` is the maximum distance between the current and predicted word within a sentence.
-    :param model_size: the dimensionality of the feature vectors.
-    :param clean: Whether to clean the corpus
-    :return:
-    """
-    corpus_for_word2vec = text_array
-    corpus_for_word2vec = [sentence.split() for sentence in corpus_for_word2vec]
-    print('Starting to train model')
-    try:
-        model = gensim.models.Word2Vec(corpus_for_word2vec, min_count=min_count,
-                                            window=window_size, size=model_size, iter=50)
-    except RuntimeError:
-        print('No word appeared %d times, reran with min_count=1' % min_count)
-        model = gensim.models.Word2Vec(corpus_for_word2vec, min_count=1,
-                                            window=window_size, size=model_size, iter=50)
-    return model
+    # df_train = scene_permutation(df_train)
+    # df_test = scene_permutation(df_test)
+    return df_train, df_test
 
 #TODO maybe remove this
 def clean_characters(df):
@@ -74,7 +71,7 @@ def clean_characters(df):
 
     return indices_to_remove
 
-def create_index_usingduplicated(df, grouping_cols):
+def create_index_using_duplicated(df, grouping_cols):
     df.sort_values(grouping_cols, inplace=True)
     duplicated = df.duplicated(subset=grouping_cols, keep='first')
     new_group = ~duplicated
@@ -125,7 +122,7 @@ def load_corpus():
 
     # char_idx_remove = clean_characters(df)
     # df.loc[char_idx_remove, ['character']] = np.nan
-    df['global_episode_num'] = create_index_usingduplicated(df, ['season', 'episode_num'])
+    df['global_episode_num'] = create_index_using_duplicated(df, ['season', 'episode_num'])
     return df
 
 #TODO maybe remove this
@@ -146,19 +143,6 @@ def plotStuff(df_to_plot):
     g3 = sns.FacetGrid(df_to_plot, col='character')
     g3.map(sns.kdeplot, "num_words", "laugh_time", shaded=True)
     plt.show()
-
-
-def getOneHotEncoding(text_array, is_binary=True):
-    '''
-    Creatres a one hot encoding / binary encoding for a given array
-    :param text_array: Array to encode
-    :param is_binary: to return a OneHotEncoding or BinaryEncoding
-    :return: vectorizer, array shape (text_array.shape[0], # unique words(text_array)
-    '''
-    cv = CountVectorizer(binary=is_binary)
-    freq = cv.fit_transform(text_array)
-
-    return cv, freq
 
 def getSceneData(df):
     df.loc[:, 'time_from_prev'] = np.array([0] + [df.start[i] - df.end[i - 1]
@@ -201,17 +185,8 @@ def getSceneData(df):
                               for _ in range(number_rows_scene[i])]
     df.loc[:, 'n_scene_characters'] = df.scene_characters.str.len()
     df.loc[:, 'scene_number_in_episode'] = scene_number_in_episode
-    df.loc[:, 'global_scene_number'] = create_index_usingduplicated(df, ['global_episode_num', 'scene_number_in_episode'])
+    df.loc[:, 'global_scene_number'] = create_index_using_duplicated(df, ['global_episode_num', 'scene_number_in_episode'])
     return df
 
 
-if __name__ == "__main__":
-    df = load_corpus()
-    df_main = df[df['character'].isin(["JERRY", "ELAINE", "KRAMER", "GEORGE"])]
-    # model = getWord2Vec(df.txt)
-    print('here')
-    # plotStuff(df_main)
-    freq, corpus_one_hot = getOneHotEncoding(df.txt)
-    print(corpus_one_hot.shape)
-    # freq_trigrams, corpus_trigrams_one_hot = getTrigramEncoding(df.txt)
 

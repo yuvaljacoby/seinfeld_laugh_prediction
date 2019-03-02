@@ -12,7 +12,7 @@ from tensorflow.python.keras.layers import Lambda
 from tensorflow.python.keras.layers import TimeDistributed
 from sklearn.linear_model import LogisticRegression
 
-from seinfeld_playground import *
+from train_utils import *
 
 
 def logisticRegressionModel(df_train, df_test):
@@ -319,6 +319,7 @@ def multiSentence_CNN_LSTM(blocks,
                           bias_initializer='random_uniform',
                           depthwise_initializer='random_uniform',
                           padding='same'))(conv_a)
+
     # average pool over all the words
     avg_pool = TimeDistributed(GlobalAveragePooling1D())(conv_b)
     affine1 = TimeDistributed(Dense(64, activation='relu'))(avg_pool)

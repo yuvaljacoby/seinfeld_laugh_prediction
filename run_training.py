@@ -1,10 +1,11 @@
-from compare_models import *
-from train_utils import *
-from models import *
-from trainers import *
-from seinfeld_playground import *
 import os
 import argparse
+import tensorflow as tf
+from compare_models import *
+from models import *
+from trainers import *
+from utils import *
+from train_utils import *
 
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -36,6 +37,7 @@ if __name__ == "__main__":
     if args.load_dfs:
         df_train = pd.read_csv('%s/df_train.csv'%args.out_path)
         df_test = pd.read_csv('%s/df_test.csv'%args.out_path)
+        df = pd.concat(df_train, df_test)
     else:
         # load corpus
         df = load_corpus()
@@ -64,8 +66,9 @@ if __name__ == "__main__":
 
 
     # prepare additional features for the models
-    additional_features_train = prepare_additional_ftrs(df_train)
-    additional_features_val = prepare_additional_ftrs(df_test)
+    unique_chars = np.unique(df.character)
+    additional_features_train = prepare_additional_ftrs(df_train, unique_chars)
+    additional_features_val = prepare_additional_ftrs(df_test, unique_chars)
 
     print("Preparing sequential data")
     # prepare the data for sequence embedding
@@ -90,7 +93,7 @@ if __name__ == "__main__":
         if not args.load_models:
             # Create model instance.
             mlp_model = mlp_model(input_shape=x_train_mlp.shape[1:])
-            history_val_acc_mlp_model, history_val_loss_mlp_model, model_mlp_fit = train_ngram_model(mlp_model, x_train_mlp, y_train_mlp, x_val_mlp, y_val_mlp)
+            model_mlp_fit = train_ngram_model(mlp_model, x_train_mlp, y_train_mlp, x_val_mlp, y_val_mlp)
             print("Finish training mlp model")
 
             tf.keras.models.save_model(model_mlp_fit, '%s/trained_models/mlp_model.hdf5'%args.out_path, overwrite=True, include_optimizer=True)
@@ -111,8 +114,8 @@ if __name__ == "__main__":
                                                                                                      num_sentences=num_sentences)
         if not args.load_models:
             model_cnn_lstm_multi = multiSentence_CNN_LSTM(blocks=3,
-                                                          filters=32,
-                                                          kernel_size=5,
+                                                          filters=64,
+                                                          kernel_size=3,
                                                           embedding_dim=100,
                                                           dropout_rate=0.3,
                                                           pool_size=2,
@@ -124,29 +127,29 @@ if __name__ == "__main__":
                                                           use_additional_features=True,
                                                           num_additional_features=additional_features_train.shape[1])
 
-            history_val_acc_cnn_lstm_multi, history_val_loss_cnn_lstm_multi, model_cnn_lstm_multi_fit = train_sequence_model(model_cnn_lstm_multi,
-                                                                                                                             x_train_multi,
-                                                                                                                             x_val_multi,
-                                                                                                                             y_train_multi,
-                                                                                                                             y_val_multi,
-                                                                                                                             batch_size=32,
-                                                                                                                             epochs=10,
-                                                                                                                             learning_rate=0.0001,
-                                                                                                                             multiple_outputs=True,
-                                                                                                                             additional_features_train=additional_features_train_multi,
-                                                                                                                             additional_features_val=additional_features_val_multi)
+            model_cnn_lstm_multi_fit = train_sequence_model(model_cnn_lstm_multi,
+                                                             x_train_multi,
+                                                             x_val_multi,
+                                                             y_train_multi,
+                                                             y_val_multi,
+                                                             batch_size=32,
+                                                             epochs=10,
+                                                             learning_rate=0.0001,
+                                                             multiple_outputs=True,
+                                                             additional_features_train=additional_features_train_multi,
+                                                             additional_features_val=additional_features_val_multi)
 
             print("Finish training cnn lstm multi model")
 
             tf.keras.models.save_model(model_cnn_lstm_multi_fit, '%s/trained_models/lstm_multi_model.hdf5'%args.out_path, overwrite=True, include_optimizer=True)
         if args.run_predict:
             # for prediction here we make a "new" stateful model and copy the weights, this allows us to maintain history between predictions
-            model_cnn_lstm_multi_stateful = multiSentence_CNN_LSTM(blocks=3, filters=32, kernel_size=5, embedding_dim=100, dropout_rate=0.5, pool_size=2, input_shape=(1, MAX_SEQUENCE_LENGTH), num_features=len(tokenizer_index)+1, embedding_matrix=embedding_matrix, use_pretrained_embedding=True, is_embedding_trainable=True, use_additional_features=True, num_additional_features=additional_features_train.shape[1], stateful=True)
+            model_cnn_lstm_multi_stateful = multiSentence_CNN_LSTM(blocks=3, filters=64, kernel_size=3, embedding_dim=100, dropout_rate=0.5, pool_size=2, input_shape=(1, MAX_SEQUENCE_LENGTH), num_features=len(tokenizer_index)+1, embedding_matrix=embedding_matrix, use_pretrained_embedding=True, is_embedding_trainable=True, use_additional_features=True, num_additional_features=additional_features_train.shape[1], stateful=True)
             old_weights = model_cnn_lstm_multi_fit.get_weights()
             model_cnn_lstm_multi_stateful.set_weights(old_weights)
             # compile model
             model_cnn_lstm_multi_stateful.compile(loss='mean_squared_error', optimizer='adam')
-            y_hat_val_cnn_lstm_multi = model_cnn_lstm_multi_stateful.predict([np.reshape(x_val, (-1, 1, MAX_SEQUENCE_LENGTH)), np.reshape(additional_features_val, (-1, 1, 14))], batch_size=1)[0][:, 0]
+            y_hat_val_cnn_lstm_multi = model_cnn_lstm_multi_stateful.predict([np.reshape(x_val, (-1, 1, MAX_SEQUENCE_LENGTH)), np.reshape(additional_features_val, (-1, 1, additional_features_val.shape[1]))], batch_size=1)[0][:, 0]
             y_hats.append(y_hat_val_cnn_lstm_multi)
             y_s.append(y_val)
             labels.append('LSTM_MULTI')
@@ -168,16 +171,16 @@ if __name__ == "__main__":
                                      use_pretrained_embedding=True,
                                      is_embedding_trainable=True,
                                      use_additional_features=True)
-            history_val_acc_cnn, history_val_loss_cnn, model_cnn_fit = train_sequence_model(model_cnn,
-                                                                                            x_train,
-                                                                                            x_val,
-                                                                                            y_train,
-                                                                                            y_val,
-                                                                                            batch_size=32,
-                                                                                            epochs=5,
-                                                                                            multiple_outputs=False,
-                                                                                            additional_features_train=additional_features_train,
-                                                                                            additional_features_val=additional_features_val)
+            model_cnn_fit = train_sequence_model(model_cnn,
+                                                    x_train,
+                                                    x_val,
+                                                    y_train,
+                                                    y_val,
+                                                    batch_size=32,
+                                                    epochs=5,
+                                                    multiple_outputs=False,
+                                                    additional_features_train=additional_features_train,
+                                                    additional_features_val=additional_features_val)
 
             tf.keras.models.save_model(model_cnn_fit, '%s/trained_models/cnn_model.hdf5'%args.out_path, overwrite=True, include_optimizer=True)
         if args.run_predict:
@@ -204,14 +207,14 @@ if __name__ == "__main__":
                                              use_pretrained_embedding=True,
                                              is_embedding_trainable=True,
                                              use_additional_features=False)
-            history_val_acc_cnn_no_ftrs, history_val_loss_cnn_no_ftrs, model_cnn_no_ftrs_fit = train_sequence_model(model_cnn_no_ftrs,
-                                                                                                                    x_train,
-                                                                                                                    x_val,
-                                                                                                                    y_train,
-                                                                                                                    y_val,
-                                                                                                                    batch_size=32,
-                                                                                                                    epochs=5,
-                                                                                                                    multiple_outputs=False)
+            model_cnn_no_ftrs_fit = train_sequence_model(model_cnn_no_ftrs,
+                                                            x_train,
+                                                            x_val,
+                                                            y_train,
+                                                            y_val,
+                                                            batch_size=32,
+                                                            epochs=5,
+                                                            multiple_outputs=False)
             print("Finish training cnn no ftrs model")
 
             tf.keras.models.save_model(model_cnn_no_ftrs_fit, '%s/trained_models/cnn_model_no_ftrs.hdf5'%args.out_path, overwrite=True, include_optimizer=True)
@@ -234,16 +237,16 @@ if __name__ == "__main__":
                                     is_embedding_trainable=True,
                                     use_additional_features=True)
 
-            history_val_acc_lstm, history_val_loss_lstm, model_lstm_fit = train_sequence_model(model_lstm,
-                                                                                               x_train,
-                                                                                               x_val,
-                                                                                               y_train,
-                                                                                               y_val,
-                                                                                               additional_features_train=additional_features_train,
-                                                                                               additional_features_val=additional_features_val,
-                                                                                               batch_size=32,
-                                                                                               epochs=5,
-                                                                                               multiple_outputs=True)
+            model_lstm_fit = train_sequence_model(model_lstm,
+                                                   x_train,
+                                                   x_val,
+                                                   y_train,
+                                                   y_val,
+                                                   additional_features_train=additional_features_train,
+                                                   additional_features_val=additional_features_val,
+                                                   batch_size=32,
+                                                   epochs=5,
+                                                   multiple_outputs=True)
 
             tf.keras.models.save_model(model_lstm_fit, '%s/trained_models/lstm_model.hdf5'%args.out_path, overwrite=True, include_optimizer=True)
         if args.run_predict:
@@ -267,14 +270,14 @@ if __name__ == "__main__":
                                             is_embedding_trainable=True,
                                             use_additional_features=False)
 
-            history_val_acc_lstm_no_ftrs, history_val_loss_lstm_no_ftrs, model_lstm_no_ftrs_fit = train_sequence_model(model_lstm_no_ftrs,
-                                                                                                                       x_train,
-                                                                                                                       x_val,
-                                                                                                                       y_train,
-                                                                                                                       y_val,
-                                                                                                                       batch_size=32,
-                                                                                                                       epochs=5,
-                                                                                                                       multiple_outputs=True)
+            model_lstm_no_ftrs_fit = train_sequence_model(model_lstm_no_ftrs,
+                                                           x_train,
+                                                           x_val,
+                                                           y_train,
+                                                           y_val,
+                                                           batch_size=32,
+                                                           epochs=5,
+                                                           multiple_outputs=True)
             tf.keras.models.save_model(model_lstm_no_ftrs_fit,'%s/trained_models/lstm_no_ftrs_model.hdf5'%args.out_path, overwrite=True, include_optimizer=True)
         if args.run_predict:
             y_hat_val_lstm_no_ftrs = model_lstm_no_ftrs_fit.predict(x_val)[0]

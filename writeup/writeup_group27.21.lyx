@@ -203,8 +203,16 @@ understands humor
 \end_inset
 
 , i.e.
- given the text of a scene from Seinfeld, will predict the funniness of
- each sentence.
+ given the text of a scene from Seinfeld the model will predict the 
+\begin_inset Quotes eld
+\end_inset
+
+funniness
+\begin_inset Quotes erd
+\end_inset
+
+ of each sentence.
+ 
 \end_layout
 
 \begin_layout Standard
@@ -212,8 +220,10 @@ First, we validate the data.
  We find certain flaws and inaccuracies, and think about how to deal with
  them.
  Second, we analyze the data and visualize its content.
- Then, we visualize the connections between the different characters in
+ Third, we visualize the connections between the different characters in
  the show, and build an interactive graph describing these relations.
+ And finally we train various prediction models that attempt to learn this
+ task and analyze their results.
 \end_layout
 
 \begin_layout Subsection
@@ -221,8 +231,8 @@ Difficulties
 \end_layout
 
 \begin_layout Standard
-The type of problem we are handling is very difficult, we will try to break
- them into groups:
+The types of problems we are addressing are very difficult, we will attempt
+ to break them into groups:
 \end_layout
 
 \begin_layout Subsubsection
@@ -775,10 +785,20 @@ T
 
 \begin_layout Standard
 Out of the 46,497 there are 
+\begin_inset Note Note
+status open
+
+\begin_layout Plain Layout
+TODO what were you going to say here?
+\end_layout
+
+\end_inset
+
+
 \end_layout
 
 \begin_layout Subsection
-Data Validation - no dataset is perfect in our world...
+Data Validation - no dataset is perfect...
 \end_layout
 
 \begin_layout Remark*
@@ -788,14 +808,14 @@ nb'.
 \end_layout
 
 \begin_layout Standard
-The first task was analyzing the dataset and validate it.
+The first task was analyzing the dataset and validating it.
  We watched several episodes and looked at the dataset at the same time.
 \end_layout
 
 \begin_layout Standard
 We saw that the text is pretty accurate, except minor glitches such as,
  "You met her in the supermarket.
- How did you do that?" was shorten into "You met her in the supermarket.
+ How did you do that?" was shortened to "You met her in the supermarket.
  How?".
 \end_layout
 
@@ -818,8 +838,8 @@ The first flaw: the laugh-tracks
 \end_layout
 
 \begin_layout Standard
-The laugh track is in middle of a sentences and sometimes it is during multiple
- sentences.
+The laugh track is in the middle of a sentence and sometimes it is during
+ multiple sentences.
 \end_layout
 
 \begin_layout Standard
@@ -854,6 +874,17 @@ To do this, we collected all these cases, and analyzed them statistically.
 Our solution was to mark these speaking characters as 'unknown', but keep
  the other attributes (such as text, duration, funniness, etc).
 \begin_inset Separator parbreak
+\end_inset
+
+
+\begin_inset Note Note
+status open
+
+\begin_layout Plain Layout
+TODO We ended up not using this, can say we fixed some of the obvious cases
+ and saw also a lot of false positives so we didn't clean all of them
+\end_layout
+
 \end_inset
 
 
@@ -990,14 +1021,14 @@ Newman.
 \end_layout
 
 \begin_layout Standard
-Further we wanted to see if characters use different words in funny and
+Further, we wanted to see if characters use different words in funny and
  non funny sentences.
 \end_layout
 
 \begin_layout Standard
 In order to get significant words, we filtered out words that are common
  in both types i.e.
- we used only words that:
+ we used only words that: 
 \begin_inset Formula $\frac{\#funny}{\#total}>0.5$
 \end_inset
 
@@ -1056,8 +1087,8 @@ In our attempt to succeed at this prediction task we implemented a number
  These can be split into bag-of-word type models and sequence type models.
 \end_layout
 
-\begin_layout Standard
-Bag-Of-Words type:
+\begin_layout Subsection
+Bag-Of-Words models
 \end_layout
 
 \begin_layout Standard
@@ -1096,8 +1127,8 @@ Yada
  ngrams).
 \end_layout
 
-\begin_layout Standard
-Sequence type:
+\begin_layout Subsection
+Sequence models
 \end_layout
 
 \begin_layout Standard
@@ -1124,7 +1155,7 @@ funniness
 \end_inset
 
 .
- So in each of these models we also created version where the following
+ So in each of these models we also created a version where the following
  features are inputted at some stage:
 \end_layout
 
@@ -1160,7 +1191,7 @@ The first two models implemented worked per sentence.
  These models are:
 \end_layout
 
-\begin_layout Standard
+\begin_layout Subsubsection
 Long Short Term Memory model:
 \end_layout
 
@@ -1183,7 +1214,7 @@ We also added another output directly after the attention mechanism (before
  Our final loss is a weighted binary cross-entropy loss of these two outputs.
 \end_layout
 
-\begin_layout Standard
+\begin_layout Subsubsection
 Convolutional Neural Network model:
 \end_layout
 
@@ -1217,7 +1248,7 @@ The final model we implemented did make use of the additonal information
  of other relevant sentences:
 \end_layout
 
-\begin_layout Standard
+\begin_layout Subsubsection
 Long Short Term Memory Multi-Sentence model:
 \end_layout
 
@@ -1319,11 +1350,9 @@ Scores with/without the additional features.
 \end_layout
 
 \begin_layout Standard
-Numerically, here are the confusion matrices for the different models:
-\begin_inset Separator parbreak
-\end_inset
-
-
+We also attach the confusion matrices of the predictions of our various
+ models, showing a clear improvement from Bag Of Word models to Sequence
+ models, and from Sequence models without high level features to those with.
 \end_layout
 
 \begin_layout Standard
@@ -1344,12 +1373,13 @@ Confusion matrices
 
 \begin_layout Standard
 It's not perfect, but it definitely learned something.
- We must remember that our data is quite noisy, so nothing can do it perfectly.
+ We must remember that our data is quite noisy, so there is a limit on the
+ accuracy these model can achieve.
 \end_layout
 
 \begin_layout Standard
-We tried to split the 4 main characters and see if the performance are different
- when we look at certain character.
+We tried to split the 4 main characters and see if the performances are
+ different when we look at certain character.
  We found that there are minor changes, but overall they're all quite the
  same.
  You can see for yourself in the notebook.
@@ -1428,25 +1458,46 @@ Severe
 
 \begin_layout Standard
 These mistakes don't seem that severe.
- By looking at it (without checking the label) one can think it's label
- is the opposite.
- It demonstrates how difficult this task is.
+ By looking at it (without checking the label) one can think its label is
+ the opposite.
+ It demonstrates how difficult this task is and can explain why the Multi
+ Sentence LSTM model did not give a large increase in accuracy.
+ If we as humans find it hard to decide which specific sentence in a scene
+ is a funny one, then it must be hard for our model.
+ 
 \end_layout
 
 \begin_layout Section
-Future Work
+Conclusion and Future Work
 \end_layout
 
 \begin_layout Standard
-TODO
-\end_layout
-
-\begin_layout Section
-Conclusion
+Given an annotated dataset of the laugh track in Seinfeld subtitles we implement
+ed multiple models that predict whether or not a sentence from seinfeld
+ is funny based on both textual and high level features.
+ We did this using both Bag Of Word and Sequence type models and showed
+ a clear advantage to the latter type.
+ In addition, we showed that the additional features such as the speaker,
+ rate of speaking and length are very indicitave of when there is laughter.
+ 
 \end_layout
 
 \begin_layout Standard
-TODO
+While the data for the most part was accurate, we did find some issues with
+ the task and the data that would be worth addressing in any future work.
+ One of these issues was that many times sentences are funny or not based
+ on factors other than text.
+ Therefore, a nice work that could be attempted is inputting features of
+ the intonation of a sentence (either through audio input or other annotation).
+ 
+\end_layout
+
+\begin_layout Standard
+It would also be interesting to use these methods on a combination of sitcoms
+ and see whether we can generalize to other untrained sitcoms.
+ One way to do so is to represent each character in the sitcom as some mixture
+ of type-cast sitcom characters and then attempt to generalize between sitcoms
+ based on that representation.
 \end_layout
 
 \begin_layout Bibliography

@@ -6,6 +6,11 @@ from sklearn.feature_selection import SelectKBest, f_classif
 from tensorflow.python.keras.preprocessing import sequence
 from tensorflow.python.keras.preprocessing import text
 
+from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.preprocessing import Binarizer
+
+import gensim
+
 # Vectorization parameters
 # Range (inclusive) of n-gram sizes for tokenizing text.
 NGRAM_RANGE = (1, 2)
@@ -25,41 +30,49 @@ MIN_DOCUMENT_FREQUENCY = 2
 MAX_SEQUENCE_LENGTH = 20
 
 
-def scene_permutation(df):
-    scene_groups = df.groupby('global_scene_number').groups
-    order = np.random.permutation(list(scene_groups.keys()))
-    order_idx = []
+def getWord2Vec(text_array, min_count=5, window_size=5, model_size=250):
+    """
+    Method that handles the cleaning, tokenizing of the corpus and training of the model on that corpus.
+    :param text_array: The corpus, as an array of sentences
+    :param min_count: How many times a word must appear to be included
+    :param window_size: `window` is the maximum distance between the current and predicted word within a sentence.
+    :param model_size: the dimensionality of the feature vectors.
+    :param clean: Whether to clean the corpus
+    :return:
+    """
+    corpus_for_word2vec = text_array
+    corpus_for_word2vec = [sentence.split() for sentence in corpus_for_word2vec]
+    print('Starting to train model')
+    try:
+        model = gensim.models.Word2Vec(corpus_for_word2vec, min_count=min_count,
+                                            window=window_size, size=model_size, iter=50)
+    except RuntimeError:
+        print('No word appeared %d times, reran with min_count=1' % min_count)
+        model = gensim.models.Word2Vec(corpus_for_word2vec, min_count=1,
+                                            window=window_size, size=model_size, iter=50)
+    return model
 
-    for i in order:
-        order_idx = np.hstack((order_idx, scene_groups[i].values))
+def getTrigramEncoding(text_array):
+    freq = CountVectorizer(ngram_range=(3, 3), analyzer='char_wb') # trigram
+    corpus_trigrams = freq.fit_transform(text_array)
 
-    return df.loc[order_idx, :].reset_index()
+    onehot = Binarizer()
+    corpus_trigrams_one_hot = onehot.fit_transform(corpus_trigrams.toarray())
+
+    return freq, corpus_trigrams_one_hot
 
 
-def split_train_test(df, test_ratio=0.2, seed=42):
+def getOneHotEncoding(text_array, is_binary=True):
     '''
-    Split data to train and test based on episode --> episodes will be fully in train / test
-    Then shuffle the scenes inside each split --> each scene will stay in order (but the scene after can from different time)
-    Uses global_episode_num and global_scene_number, start
-    :param df: df with features (using global_episode_num)
-    :param test_ratio: float [0,1] ratio of samples to keep in test
-    :param seed: int seed for randomness
-    :return: df_train, df_test
+    Creatres a one hot encoding / binary encoding for a given array
+    :param text_array: Array to encode
+    :param is_binary: to return a OneHotEncoding or BinaryEncoding
+    :return: vectorizer, array shape (text_array.shape[0], # unique words(text_array)
     '''
+    cv = CountVectorizer(binary=is_binary)
+    freq = cv.fit_transform(text_array)
 
-    df = df.sort_values(by=['global_episode_num', 'global_scene_number', 'start'])
-    np.random.seed(seed=seed)
-    test_episode = np.random.choice(df.global_episode_num,
-                                    size=int(len(df.global_episode_num.unique()) * test_ratio),
-                                    replace=False)
-    train_episode = set(df.global_episode_num) - set(test_episode)
-
-    df_train = df[df.global_episode_num.isin(train_episode)]
-    df_test = df[df.global_episode_num.isin(test_episode)]
-
-    # df_train = scene_permutation(df_train)
-    # df_test = scene_permutation(df_test)
-    return df_train, df_test
+    return cv, freq
 
 
 def ngram_vectorize(train_texts, train_labels, val_texts):
@@ -186,19 +199,21 @@ def prepare_multi_sentence_data(x_train, x_val, y_train, y_val,
     return x_train_multi, x_val_multi , y_train_multi, y_val_multi, \
            additional_features_train_multi, additional_features_val_multi
 
-def prepare_additional_ftrs(df):
+def prepare_additional_ftrs(df, unique_chars):
     # add additional high level features to be concatenated in the model
-    num_ftrs = 14
+    num_ftrs = unique_chars.shape[0] + 5
     additional_features = np.zeros((df.shape[0], num_ftrs))
-    additional_features[df.character == "JERRY", 0] = 1
-    additional_features[df.character == "GEORGE", 1] = 1
-    additional_features[df.character == "ELAINE", 2] = 1
-    additional_features[df.character == "KRAMER", 3] = 1
-    additional_features[df.character == "NEWMAN", 4] = 1
-    additional_features[df.character == "MORTY", 5] = 1
-    additional_features[df.character == "FRANK", 6] = 1
-    additional_features[df.character == "ESTELLE", 7] = 1
-    additional_features[df.character == "HELEN", 8] = 1
+    for i, char in enumerate(unique_chars):
+        additional_features[df.character == char, i] = 1
+    # additional_features[df.character == "JERRY", 0] = 1
+    # additional_features[df.character == "GEORGE", 1] = 1
+    # additional_features[df.character == "ELAINE", 2] = 1
+    # additional_features[df.character == "KRAMER", 3] = 1
+    # additional_features[df.character == "NEWMAN", 4] = 1
+    # additional_features[df.character == "MORTY", 5] = 1
+    # additional_features[df.character == "FRANK", 6] = 1
+    # additional_features[df.character == "ESTELLE", 7] = 1
+    # additional_features[df.character == "HELEN", 8] = 1
     additional_features[:, 9] = df.start
     additional_features[:, 10] = df.length
     additional_features[:, 11] = df.num_words
