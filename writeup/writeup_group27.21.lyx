@@ -79,7 +79,7 @@ Can we (artificially) understand Seinfeld's humor?
 \end_layout
 
 \begin_layout Author
-Dan Kufra (30219082-2 dank) [
+Dan Kufra (30219082-2 dan_kufra) [
 \begin_inset CommandInset href
 LatexCommand href
 target "dan.kufra@mail.huji.ac.il"
@@ -257,7 +257,7 @@ funny
  i.e.
  the absence of ground truth.
  In this task, we will try to predict the Seinfeld writer's humor, in this
- case we do have labels, thought this work we use funny as funny be Seinfeld
+ case we do have labels, thought this work we use funny as funny by Seinfeld
  writers.
 \end_layout
 
@@ -821,7 +821,7 @@ The laugh track is in the middle of a sentence and sometimes it is during
 \end_layout
 
 \begin_layout Subsubsection
-The second flaw: the speaking character is sometime mislabeled.
+The second flaw: the speaking character is sometime mislabeled
 \end_layout
 
 \begin_layout Standard
@@ -829,7 +829,8 @@ While visualizing the data we saw a weird phenomenon (fig 1), the histogram
  of the amount of sentences in a row has a very long tail, with up to 31
  sentences in a row.
  While there are scenarios where this is possible (a phone call where we
- hear only one side, or a long monologue).
+ hear only one side, or a long monologue), most of the times it seems unreasonab
+le.
 \begin_inset Newline newline
 \end_inset
 
@@ -840,9 +841,13 @@ We collected all these cases, and analyzed them statistically.
 
 \begin_layout Standard
 To further investigate we watched multiple scenes that there was a character
- talked more than 8 sentences in a row, we saw that many of them are actual
- long monologues by one character so we decided to keep them in the data.
+ talked more than 8 sentences in a row.
+ We saw that many of them are actual long monologues by one character, and
+ some are mistakes.
+ We decided to keep them in the data, because our dataset is already not
+ so big and we do not want to reduce it.
 \end_layout
+
 
 \begin_layout Standard
 \align center
@@ -1174,7 +1179,7 @@ The first two models implemented worked per sentence.
 \end_layout
 
 \begin_layout Subsubsection
-Long Short Term Memory model:
+Long Short Term Memory model
 \end_layout
 
 \begin_layout Standard
@@ -1195,6 +1200,7 @@ We also added another output directly after the attention mechanism (before
  propogates in some way back to the LSTM cells.
  Our final loss is a weighted binary cross-entropy loss of these two outputs.
 \end_layout
+
 
 \begin_layout Standard
 \align center
@@ -1217,7 +1223,7 @@ figure 5 - Long Short Term Memory model's graph
 \end_layout
 
 \begin_layout Subsubsection
-Convolutional Neural Network model:
+Convolutional Neural Network model
 \end_layout
 
 \begin_layout Standard
@@ -1245,6 +1251,7 @@ Then a 1 dimensional Average Pooling layer and a Fully Connected layer.
  We then apply a binary cross-entropy loss on the two outputs.
 \end_layout
 
+
 \begin_layout Standard
 \align center
 \begin_inset Graphics
@@ -1267,7 +1274,7 @@ The final model we implemented did make use of the additonal information
 \end_layout
 
 \begin_layout Subsubsection
-Long Short Term Memory Multi-Sentence model:
+Long Short Term Memory Multi-Sentence model
 \end_layout
 
 \begin_layout Standard
@@ -1289,6 +1296,7 @@ funniness
  per sentence and applying a weighted binary cross-entropy loss on the two
  outputs.
 \end_layout
+
 
 \begin_layout Standard
 \align center
@@ -1348,6 +1356,7 @@ We saw that the features we added helped the models greatly.
  Here are the scores for the CNN and LSTM models, with/without the additional
  features.
 \end_layout
+
 
 \begin_layout Standard
 \align center
