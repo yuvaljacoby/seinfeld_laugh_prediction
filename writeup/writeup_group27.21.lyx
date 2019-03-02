@@ -1,9 +1,7 @@
 #LyX 2.3 created this file. For more info see http://www.lyx.org/
-\lyxformat 544
+\lyxformat 474
 \begin_document
 \begin_header
-\save_transient_properties true
-\origin unavailable
 \textclass article
 \use_default_options true
 \begin_modules
@@ -14,18 +12,16 @@ theorems-ams
 \language_package default
 \inputencoding auto
 \fontencoding global
-\font_roman "default" "default"
-\font_sans "default" "default"
-\font_typewriter "default" "default"
-\font_math "auto" "auto"
+\font_roman default
+\font_sans default
+\font_typewriter default
+\font_math auto
 \font_default_family default
 \use_non_tex_fonts false
 \font_sc false
 \font_osf false
-\font_sf_scale 100 100
-\font_tt_scale 100 100
-\use_microtype false
-\use_dash_ligatures false
+\font_sf_scale 100
+\font_tt_scale 100
 \graphics default
 \default_output_format default
 \output_sync 0
@@ -55,7 +51,6 @@ theorems-ams
 \suppress_date false
 \justification true
 \use_refstyle 1
-\use_minted 0
 \index Index
 \shortcut idx
 \color #008000
@@ -66,10 +61,7 @@ theorems-ams
 \tocdepth 3
 \paragraph_separation indent
 \paragraph_indentation default
-\is_math_indent 0
-\math_numbering_side default
-\quotes_style english
-\dynamic_quotes 0
+\quotes_language english
 \papercolumns 1
 \papersides 1
 \paperpagestyle default
@@ -92,7 +84,6 @@ Dan Kufra (30219082-2 dank) [
 LatexCommand href
 target "dan.kufra@mail.huji.ac.il"
 type "mailto:"
-literal "false"
 
 \end_inset
 
@@ -105,7 +96,6 @@ Yuval Jacoby (30224707-7 yuvalja) [
 LatexCommand href
 target "yuval.jacoby@mail.huji.ac.il"
 type "mailto:"
-literal "false"
 
 \end_inset
 
@@ -118,7 +108,6 @@ Alon Netser (31160253-6, alonnetser) [
 LatexCommand href
 target "alon.netser@mail.huji.ac.il"
 type "mailto:"
-literal "false"
 
 \end_inset
 
@@ -148,7 +137,6 @@ Seinfeld
 LatexCommand href
 name "YouTube"
 target "https://www.youtube.com/watch?v=Qe9YzGYDJk8"
-literal "false"
 
 \end_inset
 
@@ -157,7 +145,6 @@ literal "false"
 LatexCommand href
 name "YouTube"
 target "https://www.youtube.com/watch?v=XoMx_5KuUkI"
-literal "false"
 
 \end_inset
 
@@ -166,7 +153,6 @@ literal "false"
 LatexCommand href
 name "YouTube"
 target "https://www.youtube.com/watch?v=epmvG3pjpu0"
-literal "false"
 
 \end_inset
 
@@ -183,12 +169,10 @@ Get Out!
 LatexCommand href
 name "YouTube"
 target "https://www.youtube.com/watch?v=JBgcgQD5bJs"
-literal "false"
 
 \end_inset
 
 ).
- 
 \end_layout
 
 \begin_layout Abstract
@@ -261,7 +245,6 @@ We use humor all the time, but it's still hard to explain why something
 \begin_inset CommandInset citation
 LatexCommand cite
 key "key-2,key-3,key-6"
-literal "true"
 
 \end_inset
 
@@ -348,7 +331,6 @@ The Big Bang Theory
 \begin_inset CommandInset citation
 LatexCommand cite
 key "key-4"
-literal "true"
 
 \end_inset
 
@@ -374,7 +356,6 @@ We downloaded the dataset from
 LatexCommand href
 name "GitHub"
 target "https://github.com/ranyadshalom/seinfeld_laugh_corpus"
-literal "false"
 
 \end_inset
 
@@ -384,7 +365,6 @@ LatexCommand href
 name "Ran Yad Shalom"
 target "ranyadshalom@gmail.com"
 type "mailto:"
-literal "false"
 
 \end_inset
 
@@ -393,7 +373,6 @@ literal "false"
 LatexCommand href
 name "Yoav Golberg"
 target "https://www.cs.bgu.ac.il/~yoavg/uni/"
-literal "false"
 
 \end_inset
 
@@ -401,7 +380,6 @@ literal "false"
 \begin_inset CommandInset citation
 LatexCommand cite
 key "key-1"
-literal "true"
 
 \end_inset
 
@@ -426,7 +404,6 @@ R.
 \begin_inset CommandInset href
 LatexCommand href
 target "opensubtitles.org"
-literal "false"
 
 \end_inset
 
@@ -435,7 +412,6 @@ literal "false"
 LatexCommand href
 name "seinology.com"
 target "http://www.seinology.com/scripts-english.shtml"
-literal "false"
 
 \end_inset
 
@@ -447,7 +423,6 @@ literal "false"
 \begin_inset CommandInset citation
 LatexCommand cite
 key "key-1"
-literal "true"
 
 \end_inset
 
@@ -505,11 +480,8 @@ Useful features of the sentence, such as 'num_words', 'length' (in seconds),
 \begin_layout Standard
 For example, here are 3 lines from our dataset (meta-data such as season,
  episode, etc omitted).
-\begin_inset Separator latexpar
-\end_inset
-
-
 \end_layout
+
 
 \begin_layout Standard
 \align center
@@ -850,7 +822,6 @@ The timing of the talking are also pretty accurate, and by reading the paper
 \begin_inset CommandInset citation
 LatexCommand cite
 key "key-1"
-literal "true"
 
 \end_inset
 
@@ -899,8 +870,9 @@ To do this, we collected all these cases, and analyzed them statistically.
 \begin_layout Standard
 Our solution was to mark these speaking characters as 'unknown', but keep
  the other attributes (such as text, duration, funniness, etc).
-\begin_inset Separator latexpar
-\end_inset
+\end_layout
+
+\begin_layout Standard
 
 
 \begin_inset Note Note
@@ -986,11 +958,8 @@ We wanted to see if there are differences between funny and not-funny sentences
 \begin_layout Standard
 Our conclusions were to add these features to the sentence.
  We saw that the results improved when we gave them these features.
-\begin_inset Separator latexpar
-\end_inset
-
-
 \end_layout
+
 
 \begin_layout Standard
 \align center
@@ -1023,7 +992,6 @@ To do so we removed very frequent English words (using
 LatexCommand href
 name "gensim"
 target "https://radimrehurek.com/gensim/"
-literal "false"
 
 \end_inset
 
@@ -1331,11 +1299,8 @@ ipynb'.
 After we finished training the different models we built, we turned to analyze
  their performance.
  We looked visually at some of the results, and plotted several measures.
-\begin_inset Separator latexpar
-\end_inset
-
-
 \end_layout
+
 
 \begin_layout Standard
 \align center
@@ -1357,11 +1322,8 @@ figure 5 - ROC-curves
 We saw that the features we added helped the models greatly.
  Here are the scores for the CNN and LSTM models, with/without the additional
  features.
-\begin_inset Separator latexpar
-\end_inset
-
-
 \end_layout
+
 
 \begin_layout Standard
 \align center
@@ -1431,11 +1393,8 @@ Furthermore, we wanted to look at some of the results visually.
 Here is the most severe false-positive (i.e.
  the model thought it's funny but it doesn't).
  We also add some context (5 sentences before the allegedly 'funny' sentence).
-\begin_inset Separator latexpar
-\end_inset
-
-
 \end_layout
+
 
 \begin_layout Standard
 \align center
@@ -1464,11 +1423,8 @@ Severe
 \begin_layout Standard
 Here are the severe false-negatives (i.e.
  the model thought it is not funny but it is):
-\begin_inset Separator latexpar
-\end_inset
-
-
 \end_layout
+
 
 \begin_layout Standard
 \align center
@@ -1542,7 +1498,6 @@ It would also be interesting to use these methods on a combination of sitcoms
 \begin_inset CommandInset bibitem
 LatexCommand bibitem
 key "key-1"
-literal "true"
 
 \end_inset
 
@@ -1557,7 +1512,6 @@ literal "true"
 \begin_inset CommandInset bibitem
 LatexCommand bibitem
 key "key-2"
-literal "true"
 
 \end_inset
 
@@ -1573,7 +1527,6 @@ R.
 \begin_inset CommandInset bibitem
 LatexCommand bibitem
 key "key-3"
-literal "true"
 
 \end_inset
 
@@ -1590,7 +1543,6 @@ literal "true"
 \begin_inset CommandInset bibitem
 LatexCommand bibitem
 key "key-4"
-literal "true"
 
 \end_inset
 
@@ -1605,7 +1557,6 @@ literal "true"
 \begin_inset CommandInset bibitem
 LatexCommand bibitem
 key "key-6"
-literal "true"
 
 \end_inset
 
