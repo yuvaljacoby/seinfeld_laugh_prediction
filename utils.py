@@ -4,6 +4,7 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 from seinfeld_laugh_corpus import corpus
 
+
 def scene_permutation(df):
     scene_groups = df.groupby('global_scene_number').groups
     order = np.random.permutation(list(scene_groups.keys()))
@@ -40,7 +41,7 @@ def split_train_test(df, test_ratio=0.2, seed=42):
     # df_test = scene_permutation(df_test)
     return df_train, df_test
 
-#TODO maybe remove this
+
 def clean_characters(df):
     max_in_a_row = 10
     curr_character = df['character'][0]  # The current character speaking.
@@ -124,25 +125,6 @@ def load_corpus():
     # df.loc[char_idx_remove, ['character']] = np.nan
     df['global_episode_num'] = create_index_using_duplicated(df, ['season', 'episode_num'])
     return df
-
-#TODO maybe remove this
-def plotStuff(df_to_plot):
-    # sentence time length by character and by funniness
-    g = sns.FacetGrid(df_to_plot, col='character', row='is_funny')
-    g.map(sns.distplot, "length", bins=50, color='b')
-
-    # sentence length by character and by funniness
-    g2 = sns.FacetGrid(df_to_plot, col='character', row='is_funny')
-    g2.map(sns.distplot, "num_words", bins=50, color='b')
-
-    # sentence time length vs laugh_time dist by character
-    g3 = sns.FacetGrid(df_to_plot, col='character')
-    g3.map(sns.kdeplot, "length", "laugh_time", shaded=True)
-
-    # sentence length vs laugh_time dist by character
-    g3 = sns.FacetGrid(df_to_plot, col='character')
-    g3.map(sns.kdeplot, "num_words", "laugh_time", shaded=True)
-    plt.show()
 
 def getSceneData(df):
     df.loc[:, 'time_from_prev'] = np.array([0] + [df.start[i] - df.end[i - 1]

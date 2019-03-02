@@ -52,6 +52,7 @@ def getWord2Vec(text_array, min_count=5, window_size=5, model_size=250):
                                             window=window_size, size=model_size, iter=50)
     return model
 
+
 def getTrigramEncoding(text_array):
     freq = CountVectorizer(ngram_range=(3, 3), analyzer='char_wb') # trigram
     corpus_trigrams = freq.fit_transform(text_array)
@@ -176,6 +177,7 @@ def get_sequence_data(df_train, df_test):
     y_val = df_test.is_funny
     return tokenizer_index, x_train, x_val, y_train, y_val
 
+
 def prepare_multi_sentence_data(x_train, x_val, y_train, y_val,
                                 additional_ftrs_train, additional_ftrs_val, num_sentences=5):
     # prepare the data by taking each sentence and adding num_sentences after it
@@ -205,19 +207,9 @@ def prepare_additional_ftrs(df, unique_chars):
     additional_features = np.zeros((df.shape[0], num_ftrs))
     for i, char in enumerate(unique_chars):
         additional_features[df.character == char, i] = 1
-    # additional_features[df.character == "JERRY", 0] = 1
-    # additional_features[df.character == "GEORGE", 1] = 1
-    # additional_features[df.character == "ELAINE", 2] = 1
-    # additional_features[df.character == "KRAMER", 3] = 1
-    # additional_features[df.character == "NEWMAN", 4] = 1
-    # additional_features[df.character == "MORTY", 5] = 1
-    # additional_features[df.character == "FRANK", 6] = 1
-    # additional_features[df.character == "ESTELLE", 7] = 1
-    # additional_features[df.character == "HELEN", 8] = 1
     additional_features[:, 9] = df.start
     additional_features[:, 10] = df.length
     additional_features[:, 11] = df.num_words
     additional_features[:, 12] = df.length / df.num_words
     additional_features[:, 13] = df.avg_word_length
-    # additional_features[:, 9] = df.n_scene_characters
     return additional_features
