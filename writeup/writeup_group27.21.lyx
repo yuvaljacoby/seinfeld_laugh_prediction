@@ -1,8 +1,7 @@
-#LyX 2.2 created this file. For more info see http://www.lyx.org/
-\lyxformat 503
+#LyX 2.3 created this file. For more info see http://www.lyx.org/
+\lyxformat 474
 \begin_document
 \begin_header
-\origin unavailable
 \textclass article
 \use_default_options true
 \begin_modules
@@ -13,16 +12,16 @@ theorems-ams
 \language_package default
 \inputencoding auto
 \fontencoding global
-\font_roman "default" "default"
-\font_sans "default" "default"
-\font_typewriter "default" "default"
-\font_math "auto" "auto"
+\font_roman default
+\font_sans default
+\font_typewriter default
+\font_math auto
 \font_default_family default
 \use_non_tex_fonts false
 \font_sc false
 \font_osf false
-\font_sf_scale 100 100
-\font_tt_scale 100 100
+\font_sf_scale 100
+\font_tt_scale 100
 \graphics default
 \default_output_format default
 \output_sync 0
@@ -458,11 +457,8 @@ Useful features of the sentence, such as 'num_words', 'length' (in seconds),
 \begin_layout Standard
 For example, here are 3 lines from our dataset (meta-data such as season,
  episode, etc omitted).
-\begin_inset Separator parbreak
-\end_inset
-
-
 \end_layout
+
 
 \begin_layout Standard
 \align center
@@ -833,21 +829,19 @@ While visualizing the data we saw a weird phenomenon (fig 1), the histogram
  of the amount of sentences in a row has a very long tail, with up to 31
  sentences in a row.
  While there are scenarios where this is possible (a phone call where we
- hear only one side, or a long monologue), we decided to further investigate
- and watched multiple scenes where this happens, while doing so we did see
- that in many situations this is a mistake in the speaking character tag
- of the data.
- 
+ hear only one side, or a long monologue).
 \begin_inset Newline newline
 \end_inset
 
 We collected all these cases, and analyzed them statistically.
  We saw that the mean sentences-in-a-row is around 1, and that 99% of the
  times it is below 8.
- We went over the cases where the amount of sentences said by a character
- in a row is more than 8 and manually fixed some of them.
- However, we did see that many of them are actual long monologues by one
- character so we decided to keep them in the data.
+\end_layout
+
+\begin_layout Standard
+To further investigate we watched multiple scenes that there was a character
+ talked more than 8 sentences in a row, we saw that many of them are actual
+ long monologues by one character so we decided to keep them in the data.
 \end_layout
 
 \begin_layout Standard
@@ -890,6 +884,11 @@ tail
 Splitting the sentences into scenes
 \end_layout
 
+\begin_layout Remark*
+This section was done in an interactive Jupyter Notebook named 'Scene.ipynb'.
+ You are more than welcome to take a look!
+\end_layout
+
 \begin_layout Standard
 Our intuition was that information within a scene is more relevant to other
  sentences in that scene.
@@ -897,7 +896,6 @@ Our intuition was that information within a scene is more relevant to other
  between sentences and character changes).
  Unfortunately, the data was too noisy and we were not able to split it
  up to an adequate level.
- Our attempts can be seen in the 'Scene.ipynb' ipython notebook.
 \end_layout
 
 \begin_layout Subsection
@@ -934,11 +932,8 @@ We wanted to see if there are differences between funny and not-funny sentences
 
 Our conclusions were to add these features to the sentence.
  We saw that the results improved when we gave them these features.
-\begin_inset Separator parbreak
-\end_inset
-
-
 \end_layout
+
 
 \begin_layout Standard
 \align center
@@ -1009,11 +1004,8 @@ In order to get significant words, we filtered out words that are common
 
 , in figure-3 we can see Jerry's word clouds, for example when Jerry talks
  about dating it's usually funny.
-\begin_inset Separator parbreak
-\end_inset
-
-
 \end_layout
+
 
 \begin_layout Standard
 \align center
@@ -1051,11 +1043,8 @@ community
  of the 4 main characters (Jerry, George, Kramer and Elaine), as well as
  other secondary characters (such as Jerry's parents Morty and Helen), this
  graph is interactive and for full experience please open the notebook.
-\begin_inset Separator parbreak
-\end_inset
-
-
 \end_layout
+
 
 \begin_layout Standard
 \align center
@@ -1334,11 +1323,8 @@ ipynb'.
 After we finished training the different models we built, we turned to analyze
  their performance.
  We looked visually at some of the results, and plotted several measures.
-\begin_inset Separator parbreak
-\end_inset
-
-
 \end_layout
+
 
 \begin_layout Standard
 \align center
@@ -1392,11 +1378,8 @@ figure 9 - Scores with/without the additional features.
 We also attach the confusion matrices of the predictions of our various
  models, showing a clear improvement from Bag Of Word models to Sequence
  models, and from Sequence models without high level features to those with.
-\begin_inset Separator parbreak
-\end_inset
-
-
 \end_layout
+
 
 \begin_layout Standard
 \align center
@@ -1425,7 +1408,6 @@ It's not perfect, but it definitely learned something.
 \noindent
 We tried to split the 4 main characters and see if the performances are
  different when we look at certain character.
- 
 \end_layout
 
 \begin_layout Standard
@@ -1445,11 +1427,8 @@ Furthermore, we wanted to look at some of the results visually.
 Here is the most severe false-positive (i.e.
  the model thought it's funny but it doesn't).
  We also add some context (5 sentences before the allegedly 'funny' sentence).
-\begin_inset Separator parbreak
-\end_inset
-
-
 \end_layout
+
 
 \begin_layout Standard
 \align center
@@ -1479,11 +1458,8 @@ Severe
 \noindent
 Here are the severe false-negatives (i.e.
  the model thought it is not funny but it is):
-\begin_inset Separator parbreak
-\end_inset
-
-
 \end_layout
+
 
 \begin_layout Standard
 \align center
