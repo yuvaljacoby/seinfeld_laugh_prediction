@@ -21,11 +21,24 @@ def parse_args():
     parser.add_argument('--run_predict', default=False, action='store_true')
     parser.add_argument('--plot_results', default=False, action='store_true')
     parser.add_argument('--save_predict', default=False, action='store_true')
+    parser.add_argument('--run_everything', default=False, action='store_true')
     return parser.parse_args()
 
 if __name__ == "__main__":
 
     args = parse_args()
+    if args.run_everything:
+        args.out_path = "./results"
+        args.train_mlp = True
+        args.train_CNN = True
+        args.train_CNN_no_ftrs = True
+        args.train_LSTM = True
+        args.train_LSTM_no_ftrs = True
+        args.train_Multi_LSTM = True
+        args.run_predict = True
+        args.plot_results = True
+        args.save_predict = True
+
     try:
         os.mkdir(args.out_path)
         os.mkdir("%s/figures"%args.out_path)
