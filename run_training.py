@@ -79,9 +79,8 @@ if __name__ == "__main__":
 
 
     # prepare additional features for the models
-    unique_chars = np.unique(df.character)
-    additional_features_train = prepare_additional_ftrs(df_train, unique_chars)
-    additional_features_val = prepare_additional_ftrs(df_test, unique_chars)
+    additional_features_train = prepare_additional_ftrs(df_train)
+    additional_features_val = prepare_additional_ftrs(df_test)
 
     print("Preparing sequential data")
     # prepare the data for sequence embedding
@@ -100,9 +99,9 @@ if __name__ == "__main__":
         y_val_mlp = df_test.is_funny.astype(np.float32)
         # Vectorize texts.
         x_train_mlp, x_val_mlp = ngram_vectorize(df_train.txt, y_train, df_test.txt)
-        from scipy import sparse
-        x_train_mlp = sparse.hstack((x_train_mlp, sparse.csr_matrix(additional_features_train))).A
-        x_val_mlp = sparse.hstack((x_val_mlp, sparse.csr_matrix(additional_features_val))).A
+        # from scipy import sparse
+        # x_train_mlp = sparse.hstack((x_train_mlp, sparse.csr_matrix(additional_features_train))).A
+        # x_val_mlp = sparse.hstack((x_val_mlp, sparse.csr_matrix(additional_features_val))).A
         if not args.load_models:
             # Create model instance.
             mlp_model = mlp_model(input_shape=x_train_mlp.shape[1:])

@@ -201,12 +201,19 @@ def prepare_multi_sentence_data(x_train, x_val, y_train, y_val,
     return x_train_multi, x_val_multi , y_train_multi, y_val_multi, \
            additional_features_train_multi, additional_features_val_multi
 
-def prepare_additional_ftrs(df, unique_chars):
+def prepare_additional_ftrs(df):
     # add additional high level features to be concatenated in the model
-    num_ftrs = unique_chars.shape[0] + 5
+    num_ftrs = 14
     additional_features = np.zeros((df.shape[0], num_ftrs))
-    for i, char in enumerate(unique_chars):
-        additional_features[df.character == char, i] = 1
+    additional_features[df.character == "JERRY", 0] = 1
+    additional_features[df.character == "GEORGE", 1] = 1
+    additional_features[df.character == "ELAINE", 2] = 1
+    additional_features[df.character == "KRAMER", 3] = 1
+    additional_features[df.character == "NEWMAN", 4] = 1
+    additional_features[df.character == "MORTY", 5] = 1
+    additional_features[df.character == "FRANK", 6] = 1
+    additional_features[df.character == "ESTELLE", 7] = 1
+    additional_features[df.character == "HELEN", 8] = 1
     additional_features[:, 9] = df.start
     additional_features[:, 10] = df.length
     additional_features[:, 11] = df.num_words
