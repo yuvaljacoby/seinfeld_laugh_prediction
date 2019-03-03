@@ -62,7 +62,7 @@ def train_sequence_model(model, x_train, x_val, y_train, y_val, additional_featu
     # loss = 'mean_squared_error'
     optimizer = tf.keras.optimizers.Adam(lr=learning_rate)
     if multiple_outputs:
-        model.compile(optimizer=optimizer, loss=loss, metrics=['acc'], loss_weights=[1, 0.2])
+        model.compile(optimizer=optimizer, loss=loss, metrics=['acc'], loss_weights=[1, 0.0])
     else:
         model.compile(optimizer=optimizer, loss=loss, metrics=['acc'], loss_weights=[1])
 
